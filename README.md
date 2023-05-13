@@ -25,20 +25,21 @@ const heavenyaApp = new MosquitoDbServer({
   projectName: 'heavenya',
   port: 4534, // default to 4291
   signerKey: 'random_hash_key_for_signing_auth_requests', // must be 90 length
+  accessKey: 'this_is_my_private_password', // keep this private if you don't provide databaseRules or storageRules
   databaseRules: ({ auth, collection, value, afterData, beforeData, operation, ...otherProps })=> new Promise((resolve, reject)=> {
     if (collection === 'user') {
-        if(afterData && auth && auth.uid === value._id){
-            resolve(true); // allow read/write
-        }else reject();
+        if (afterData && auth && auth.uid === value._id) {
+            resolve(); // allow read/write
+        } else reject(); // reject read/write
     } // blah, blah, other algorithm
   }),
   storageRules: ({...props})=> new Promise(resolve=> {
     resolve(true) // handle read/write yourself here
-  }),
+  })
 });
 ```
 
-your server is ready to be run on a node.js environment 🚀
+your server is ready to be deploy on a node.js environment 🚀
 
 ## Contributing
 

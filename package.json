@@ -11,7 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "mongo-stop": "brew services stop mongodb-community",
     "mongo-run": "brew services run mongodb-community",
-    "build": "babel index.js — out-file index-compiled.js",
+    "build": "babel index.js - index-compiled.js",
     "start": "nodemon — exec babel-node index.js"
   },
   "repository": {
@@ -47,6 +47,8 @@
     "@babel/core": "^7.21.5",
     "@babel/node": "^7.20.7",
     "@babel/preset-env": "^7.21.5",
+    "@babel/runtime": "^7.21.5",
+    "babel-cli": "^6.26.0",
     "eslint": "^8.23.1"
   },
   "engines": {
