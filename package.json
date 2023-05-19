@@ -2,7 +2,7 @@
   "name": "mosquitodb",
   "version": "1.0.0",
   "description": "MosquitoDB is a NoSQL database engine adapted with super fast, memory efficient, secured and fully queried features",
-  "main": "index.js",
+  "main": "lib/index.js",
   "type": "module",
   "directories": {
     "lib": "lib"
@@ -11,8 +11,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "mongo-stop": "brew services stop mongodb-community",
     "mongo-run": "brew services run mongodb-community",
-    "build": "babel index.js - index-compiled.js",
-    "start": "nodemon — exec babel-node index.js"
+    "mongo-list": "brew services list",
+    "build": "rm -rf dist && NODE_ENV=production babel lib --out-dir dist --copy-files",
+    "start": "nodemon --exec babel-node --experimental-modules --es-module-specifier-resolution=node lib/index.js"
   },
   "repository": {
     "type": "git",
@@ -38,17 +39,21 @@
   "dependencies": {
     "body-parser": "^1.20.2",
     "compression": "^1.7.4",
+    "connect-busboy": "^1.0.0",
     "express": "^4.18.2",
     "express-fileupload": "^1.4.0",
+    "google-auth-library": "^8.8.0",
     "jsonwebtoken": "^9.0.0",
-    "mongodb": "^5.3.0"
+    "mkdirp": "^3.0.1",
+    "mongodb": "^5.3.0",
+    "socket.io": "^4.6.1"
   },
   "devDependencies": {
+    "@babel/cli": "^7.21.5",
     "@babel/core": "^7.21.5",
     "@babel/node": "^7.20.7",
     "@babel/preset-env": "^7.21.5",
     "@babel/runtime": "^7.21.5",
-    "babel-cli": "^6.26.0",
     "eslint": "^8.23.1"
   },
   "engines": {
