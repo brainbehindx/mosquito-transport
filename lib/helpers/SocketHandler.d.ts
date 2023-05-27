@@ -1,7 +1,6 @@
-import { Server, Socket } from "socket.io";
-import { EventsMap, ReservedOrUserListener } from "socket.io/dist/typed-events";
+import { Socket } from "socket.io";
 
 
 // export const handleSocketPlug: Server['on'];
 
-export function handleSocketPlug(path: string, callback: (socket: Socket, response: any) => void): (socket: Socket) => void;
+export function handleSocketPlug(path: string, callback: (socket: Socket, response: any, roof?: any) => void): (socket: Socket) => void;

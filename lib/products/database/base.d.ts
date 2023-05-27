@@ -1,3 +1,3 @@
 import { Db } from 'mongodb';
 
-export function getDB(dbName?: string, dbUrl?: string): Db;
+export function getDB(projectName?: string, dbName?: string, dbUrl?: string): Db;
