@@ -1,7 +1,7 @@
 {
   "name": "mosquitodb",
-  "version": "1.0.0",
-  "description": "MosquitoDB is a NoSQL database engine adapted with super fast, memory efficient, secured and fully queried features",
+  "version": "1.1.3",
+  "description": "MosquitoDB is a BaaS NoSql database engine adapted with super fast, memory efficient and secured features",
   "main": "lib/index.js",
   "type": "module",
   "directories": {
@@ -12,7 +12,7 @@
     "mongo-stop": "brew services stop mongodb-community",
     "mongo-run": "brew services run mongodb-community",
     "mongo-list": "brew services list",
-    "build": "rm -rf dist && NODE_ENV=production babel lib --out-dir dist --copy-files",
+    "build": "rm -rf distx && babel lib --out-dir distx --copy-files",
     "start": "nodemon --exec babel-node --experimental-modules --es-module-specifier-resolution=node lib/index.js"
   },
   "repository": {
@@ -28,7 +28,8 @@
     "serverless",
     "BaaS",
     "firebase",
-    "fully queried"
+    "fully queried",
+    "mongodb"
   ],
   "author": "Anthony Onabanjo",
   "license": "MIT",
@@ -38,6 +39,7 @@
   "homepage": "https://github.com/deflexable/mosquitodb#readme",
   "dependencies": {
     "compression": "^1.7.4",
+    "cors": "^2.8.5",
     "express": "^4.18.2",
     "google-auth-library": "^8.8.0",
     "jsonwebtoken": "^9.0.0",
