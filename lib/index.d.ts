@@ -236,6 +236,7 @@ export default class MosquitoDbServer {
     constructor(config: MosquitoDbServerConfig);
 
     getDatabase(dbName?: string, dbUrl?: string): Db;
+    checkToken(token: string): Promise<AuthData>;
     verifyToken(token: string): Promise<AuthData>;
     validateToken(token: string): Promise<AuthData>;
     invalidateToken(token: string): Promise<void | boolean>;
