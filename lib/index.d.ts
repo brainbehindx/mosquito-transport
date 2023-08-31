@@ -1,6 +1,9 @@
-import { Auth, Db, Document, UpdateDescription } from "mongodb";
+import { Auth, Db, Document, SortDirection, UpdateDescription } from "mongodb";
 import express from "express";
 import { CorsOptions } from "cors";
+import { Sort } from "mongodb";
+import { Filter } from "mongodb";
+import { UpdateFilter } from "mongodb";
 
 interface SimpleError {
 
@@ -11,7 +14,19 @@ interface StorageRulesSnapshot {
 }
 
 interface DatabaseRulesSnapshot {
-
+    auth?: JWTAuthData | undefined;
+    collection: string;
+    operation: 'write' | 'read';
+    sub_operation: 'findOne' | 'findMany' | 'setOne' | 'batchWrite' | 'listenDocument' | 'listenCollection' | 'insert' | 'delete' | '';
+    direction?: SortDirection;
+    sort?: Sort;
+    limit?: number;
+    dbName?: string;
+    dbUrl?: string;
+    random?: boolean; // TODO:
+    find?: Filter<undefined> | undefined | {};
+    value?: UpdateFilter<undefined> | undefined;
+    batchWrite?: any;
 }
 
 type LogLevel = 'all' | 'disabled' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot';

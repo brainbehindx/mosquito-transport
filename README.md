@@ -1,6 +1,8 @@
 # mosquitodb
 
-Under the hood, mosquitodb uses Mongodb to store it data and [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package
+Mosquitodb transform your mongodb into a BaaS making data sychronization between client and server persistable and consistent. Mosquitodb is built together with [authentication](#authentication), [storage-rules](#storage-rules) and [database-rules](#database-rules) making your application more centralize and secure.
+
+Under the hood, mosquitodb uses Mongodb to store it data and [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package.
 
 ## Installation
 
@@ -72,8 +74,9 @@ your server is ready to be deploy on a node.js environment! 🚀. Now install an
 
 
 <!-- ## Platform using Mosquitodb in production
-- [Heavenya - christian events]()
-- [Inspire - christian audio]() -->
+- [Heavenya - christian events](https://heavenya.com)
+- [Inspire - christian audio](https://inspire.com)
+- [ExamJoint - learn, study and prepare for exam](https://examjoint.com) -->
 
 ## Contributing
 
