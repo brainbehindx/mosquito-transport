@@ -247,6 +247,14 @@ interface DisconnectTaskInspector {
     task?: ({ commands: WriteCommand, dbName?: string, dbUrl?: string })
 }
 
+interface StorageSnapshot {
+    systemDest: string;
+    dest: string;
+    buffer?: Buffer;
+    operation: 'uploadFile' | 'deleteFile' | 'deleteFolder';
+    auth?: JWTAuthData;
+}
+
 export default class MosquitoDbServer {
     constructor(config: MosquitoDbServerConfig);
 
@@ -257,7 +265,7 @@ export default class MosquitoDbServer {
     invalidateToken(token: string): Promise<void | boolean>;
     listenHttpsRequest(route: string, callback?: (request: express.Request, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoDbHttpOptions): void;
     listenDatabase(collection: string, callback?: (data: DatabaseListenerCallbackData) => void, options?: DatabaseListenerOption): void;
-    listenStorage(collection: string, callback?: () => void): void;
+    listenStorage(callback?: (snapshot: StorageSnapshot) => void): () => void;
     uploadBuffer(destination: string, buffer: Buffer): Promise<string>;
     deleteFile(path: string): Promise<void>;
     listenNewUser(callback?: (user: NewUserAuthData) => void): void;
