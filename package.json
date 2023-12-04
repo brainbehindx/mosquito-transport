@@ -1,6 +1,6 @@
 {
   "name": "mosquitodb",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "MosquitoDB is a BaaS management engine adapted with super fast, memory efficient and secured features",
   "main": "lib/index.js",
   "type": "module",

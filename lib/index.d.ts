@@ -4,6 +4,9 @@ import { CorsOptions } from "cors";
 import { Sort } from "mongodb";
 import { Filter } from "mongodb";
 import { UpdateFilter } from "mongodb";
+import type { IncomingHttpHeaders } from "http";
+import type { ParsedUrlQuery } from "querystring";
+import { Socket } from "socket.io";
 
 interface SimpleError {
 
@@ -146,11 +149,74 @@ interface StaticContentProps {
     start?: number | undefined;
 }
 
+interface SneakSignupAuthResult {
+    metadata?: AuthData['metadata'];
+    profile?: AuthData['profile'];
+}
+
+interface MSocketHandshake {
+    /**
+     * The headers sent as part of the handshake
+     */
+    headers: IncomingHttpHeaders;
+    /**
+     * The date of creation (as string)
+     */
+    time: string;
+    /**
+     * The ip of the client
+     */
+    address: string;
+    /**
+     * Whether the connection is cross-domain
+     */
+    xdomain: boolean;
+    /**
+     * Whether the connection is secure
+     */
+    secure: boolean;
+    /**
+     * The date of creation (as unix timestamp)
+     */
+    issued: number;
+    /**
+     * The request URL string
+     */
+    url: string;
+    /**
+     * The query object
+     */
+    query: ParsedUrlQuery;
+    /**
+     * The user that made this request
+     */
+    user?: AuthData;
+    /**
+     * The auth object
+     */
+    auth: {
+        [key: string]: any;
+    };
+}
+
+interface MSocketSnapshot {
+    on: Socket['on'];
+    once: Socket['once'];
+    prependOnceListener: Socket['prependOnceListener'];
+    handshake: MSocketHandshake;
+    emit: Socket['emit'];
+    emitWithAck: Socket['emitWithAck'];
+    timeout: (timeout: number) => ({
+        emitWithAck: Socket['emitWithAck'];
+    })
+}
+
 interface MosquitoDbServerConfig {
     projectName: string;
     signerKey: string;
-    storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void>;
-    databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void>;
+    storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
+    databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void> | undefined;
+    onSocketSnapshot?: (snapshot: MSocketSnapshot) => void;
     port?: number;
     enableSequentialUid?: boolean;
     accessKey: string;
@@ -161,7 +227,7 @@ interface MosquitoDbServerConfig {
     dbUrl?: string;
     dbName?: string;
     mergeAuthAccount?: boolean;
-    sneakSignupAuth?: (config: SneakSignupAuthConfig) => void;
+    sneakSignupAuth?: (config: SneakSignupAuthConfig) => SneakSignupAuthResult;
     googleAuthConfig?: GoogleAuthConfig;
     appleAuthConfig?: AppleAuthConfig;
     facebookAuthConfig?: FacebookAuthConfig;
@@ -172,6 +238,10 @@ interface MosquitoDbServerConfig {
     staticContentMaxAge?: number;
     staticContentCacheControl?: number;
     corsOrigin?: CorsOptions;
+    maxRequestBufferSize?: number;
+    maxUploadBufferSize?: number;
+    uidLength?: number;
+    tokenRefreshInterval?: number;
 }
 
 interface UserProfile {
@@ -216,6 +286,7 @@ interface MosquitoDbHttpOptions {
     enforceUser?: boolean;
     validateUser?: boolean;
     enforceVerifiedUser?: boolean;
+    rawEntry?: boolean;
 }
 
 interface DatabaseListenerOption {
@@ -255,6 +326,10 @@ interface StorageSnapshot {
     auth?: JWTAuthData;
 }
 
+interface RawBodyRequest extends express.Request {
+    rawBody: Buffer;
+}
+
 export default class MosquitoDbServer {
     constructor(config: MosquitoDbServerConfig);
 
@@ -263,7 +338,7 @@ export default class MosquitoDbServer {
     verifyToken(token: string): Promise<AuthData>;
     validateToken(token: string): Promise<AuthData>;
     invalidateToken(token: string): Promise<void | boolean>;
-    listenHttpsRequest(route: string, callback?: (request: express.Request, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoDbHttpOptions): void;
+    listenHttpsRequest(route: string, callback?: (request: RawBodyRequest, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoDbHttpOptions): void;
     listenDatabase(collection: string, callback?: (data: DatabaseListenerCallbackData) => void, options?: DatabaseListenerOption): void;
     listenStorage(callback?: (snapshot: StorageSnapshot) => void): () => void;
     uploadBuffer(destination: string, buffer: Buffer): Promise<string>;
