@@ -1,29 +1,29 @@
-# mosquitodb
+# mosquito-transport
 
-Mosquitodb transform your mongodb into a BaaS making data sychronization between client and server persistable and consistent. Mosquitodb is built together with [authentication](#authentication), [storage-rules](#storage-rules) and [database-rules](#database-rules) making your application more centralize and secure.
+MosquitoTransport transform your mongodb into a BaaS making data sychronization between client and server persistable and consistent. MosquitoTransport is built together with [authentication](#authentication), [storage-rules](#storage-rules) and [database-rules](#database-rules) making your application more centralize and secure.
 
-Under the hood, mosquitodb uses Mongodb to store it data and [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package.
+Under the hood, mosquito-transport uses Mongodb to store it data and [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package.
 
 ## Installation
 
 ```sh
-npm install mosquitodb
+npm install mosquito-transport
 ```
 
 or using yarn
 
 ```sh
-yarn add mosquitodb
+yarn add mosquito-transport
 ```
 
 ## Usage
 
 ```js
-import MosquitoDbServer from "mosquitodb";
+import MosquitoTransportServer from "mosquito-transport";
 
 // setup your server, easy as taking a candy from a baby
 
-const heavenyaApp = new MosquitoDbServer({
+const heavenyaApp = new MosquitoTransportServer({
   projectName: 'heavenya',
   port: 4534, // default to 4291
   signerKey: 'random_90_hash_key_for_signing_jwt_tokens', // must be 90 length
@@ -52,11 +52,11 @@ const heavenyaApp = new MosquitoDbServer({
 });
 ```
 
-your server is ready to be deploy on a node.js environment! 🚀. Now install any mosquitodb client sdk and start making requests to the server.
+your server is ready to be deploy on a node.js environment! 🚀. Now install any mosquito-transport client sdk and start making requests to the server.
 
 ### SDKs
-- [react-native-mosquitodb](https://github.com/deflexable/react-native-mosquitodb) for react native apps
-- [mosquitodb-web](https://github.com/deflexable/mosquitodb-web) for web platform
+- [react-native-mosquito-transport](https://github.com/deflexable/react-native-mosquito-transport) for react native apps
+- [mosquito-transport-web](https://github.com/deflexable/mosquito-transport-web) for web platform
 
 ## Additional Documentations
 - [Logging Level](#logging-levels)
@@ -73,7 +73,7 @@ your server is ready to be deploy on a node.js environment! 🚀. Now install an
    - [Google Auth Setup](#google-auth-setup)
 
 
-<!-- ## Platform using Mosquitodb in production
+<!-- ## Platform using MosquitoTransport in production
 - [Heavenya - christian events](https://heavenya.com)
 - [Inspire - christian audio](https://inspire.com)
 - [ExamJoint - learn, study and prepare for exam](https://examjoint.com) -->
@@ -87,3 +87,5 @@ See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the 
 MIT
 
 ---
+
+<!-- TODO: verifyToken(), checkToken(), validateToken() -->

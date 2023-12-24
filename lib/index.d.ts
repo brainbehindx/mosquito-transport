@@ -9,27 +9,47 @@ import type { ParsedUrlQuery } from "querystring";
 import { Socket } from "socket.io";
 
 interface SimpleError {
+    simpleError?: {
+        error: string;
+        message: string;
+    }
+}
 
+interface PureHttpRequest extends express.Request {
+    res: undefined
 }
 
 interface StorageRulesSnapshot {
 
 }
 
-interface DatabaseRulesSnapshot {
-    auth?: JWTAuthData | undefined;
-    collection: string;
-    operation: 'write' | 'read';
-    sub_operation: 'findOne' | 'findMany' | 'setOne' | 'batchWrite' | 'listenDocument' | 'listenCollection' | 'insert' | 'delete' | '';
+interface BatchUpdateValue {
+    scope: 'setOne' | 'updateOne' | 'mergeOne' | 'deleteOne' | 'deleteMany' | 'replaceOne' | 'putOne';
+    find?: DatabaseRulesIOPrescription['find'];
+    value: DatabaseRulesIOPrescription['value'];
+    path: string;
+}
+
+interface DatabaseRulesIOPrescription {
+    path?: string;
     direction?: SortDirection;
     sort?: Sort;
     limit?: number;
+    random?: boolean;
+    find?: Filter<undefined> | {} | undefined;
+    value?: UpdateFilter<undefined> | undefined;
+}
+
+interface DatabaseRulesBatchWritePrescription {
+    value: BatchUpdateValue[];
+}
+
+interface DatabaseRulesSnapshot {
+    auth?: JWTAuthData | undefined;
+    endpoint: '_readDocument' | '_queryCollection' | '_writeDocument' | '_writeMapDocument' | '_documentCount' | '_listenCollection' | '_listenDocument' | '_startDisconnectWriteTask' | '_cancelDisconnectWriteTask';
+    prescription?: DatabaseRulesIOPrescription | DatabaseRulesBatchWritePrescription;
     dbName?: string;
     dbUrl?: string;
-    random?: boolean; // TODO:
-    find?: Filter<undefined> | undefined | {};
-    value?: UpdateFilter<undefined> | undefined;
-    batchWrite?: any;
 }
 
 type LogLevel = 'all' | 'disabled' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot';
@@ -152,6 +172,7 @@ interface StaticContentProps {
 interface SneakSignupAuthResult {
     metadata?: AuthData['metadata'];
     profile?: AuthData['profile'];
+    uid?: string;
 }
 
 interface MSocketHandshake {
@@ -190,13 +211,17 @@ interface MSocketHandshake {
     /**
      * The user that made this request
      */
-    user?: AuthData;
+    user?: Promise<AuthData>;
     /**
      * The auth object
      */
     auth: {
         [key: string]: any;
     };
+    /**
+     * the access token of the user that initiated this handshake
+     */
+    userToken: string | undefined;
 }
 
 interface MSocketSnapshot {
@@ -211,22 +236,38 @@ interface MSocketSnapshot {
     })
 }
 
+interface MSocketError {
+    error: string;
+    message: string;
+}
+
+interface TransformMediaOption {
+    localBuffer: Buffer,
+    request?: express.Request
+};
+
+interface TransformMediaRoute {
+    route: typeof RegExp | string;
+    type?: string;
+    transform: (options: TransformMediaOption) => Buffer | string | null | undefined;
+}
+
 interface MosquitoDbServerConfig {
     projectName: string;
     signerKey: string;
     storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
     databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void> | undefined;
-    onSocketSnapshot?: (snapshot: MSocketSnapshot) => void;
+    onSocketSnapshot?: (snapshot?: MSocketSnapshot, error?: MSocketError) => void;
     port?: number;
     enableSequentialUid?: boolean;
     accessKey: string;
-    disableCrossLogin?: boolean;
     logger?: LogLevel | LogLevel[];
     externalAddress?: string;
     hostname?: string;
     dbUrl?: string;
     dbName?: string;
     mergeAuthAccount?: boolean;
+    transformMediaRoute?: '*' | TransformMediaRoute[];
     sneakSignupAuth?: (config: SneakSignupAuthConfig) => SneakSignupAuthResult;
     googleAuthConfig?: GoogleAuthConfig;
     appleAuthConfig?: AppleAuthConfig;
@@ -241,7 +282,11 @@ interface MosquitoDbServerConfig {
     maxRequestBufferSize?: number;
     maxUploadBufferSize?: number;
     uidLength?: number;
-    tokenRefreshInterval?: number;
+    accessTokenInterval?: number;
+    refreshTokenExpiry?: number;
+    dumpsterPath?: string;
+    e2eKeyPair?: string[] | undefined;
+    enforceE2E?: boolean;
 }
 
 interface UserProfile {
@@ -257,7 +302,6 @@ interface AuthData {
     metadata: Object;
     signupMethod: 'google' | 'apple' | 'custom' | 'twitter' | 'facebook' | 'github' | string;
     joinedOn: number;
-    encryptionKey: string;
     uid: string;
     claims: Object;
     emailVerified: boolean;
@@ -270,7 +314,11 @@ interface UserData extends AuthData {
 }
 
 interface JWTAuthData extends AuthData {
-    token: string
+    token: string;
+    exp?: number;
+    aud?: string;
+    iss?: string;
+    sub?: string;
 }
 
 interface NewUserAuthData extends AuthData {
@@ -311,10 +359,9 @@ interface WriteCommand {
 
 }
 
-interface DisconnectTaskInspector {
+interface DisconnectTaskInspector extends SimpleError {
     status?: 'completed' | 'error' | 'cancelled';
     committed?: boolean;
-    simpleError?: SimpleError;
     task?: ({ commands: WriteCommand, dbName?: string, dbUrl?: string })
 }
 
@@ -334,10 +381,30 @@ export default class MosquitoDbServer {
     constructor(config: MosquitoDbServerConfig);
 
     getDatabase(dbName?: string, dbUrl?: string): Db;
-    checkToken(token: string): Promise<AuthData>;
-    verifyToken(token: string): Promise<AuthData>;
-    validateToken(token: string): Promise<AuthData>;
-    invalidateToken(token: string): Promise<void | boolean>;
+
+    /**
+     * verify token to check if it was trully created using signerKey without checking against the expiry or local token reference
+     * 
+     * @param token - the token to be verified
+     * @param isRefreshToken - set this to true if token is a refresh token
+     */
+    verifyToken(token: string, isRefreshToken?: boolean): Promise<AuthData>;
+
+    /**
+     * verify token to check if it was trully created using signerKey and checking against the expiry and local token reference
+     * 
+     * @param token - the token to be validated
+     * @param isRefreshToken - set this to true if token is a refresh token
+     */
+    validateToken(token: string, isRefreshToken?: boolean): Promise<AuthData>;
+
+    /**
+     * remove local reference of a token
+     * 
+     * @param token - the token to be invalidated
+     * @param isRefreshToken - set this to true if token is a refresh token
+     */
+    invalidateToken(token: string, isRefreshToken?: boolean): Promise<void | boolean>;
     listenHttpsRequest(route: string, callback?: (request: RawBodyRequest, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoDbHttpOptions): void;
     listenDatabase(collection: string, callback?: (data: DatabaseListenerCallbackData) => void, options?: DatabaseListenerOption): void;
     listenStorage(callback?: (snapshot: StorageSnapshot) => void): () => void;
