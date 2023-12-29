@@ -24,9 +24,9 @@ interface StorageRulesSnapshot {
 }
 
 interface BatchUpdateValue {
-    scope: 'setOne' | 'updateOne' | 'mergeOne' | 'deleteOne' | 'deleteMany' | 'replaceOne' | 'putOne';
+    scope: 'setOne' | 'setMany' | 'updateOne' | 'mergeOne' | 'deleteOne' | 'deleteMany' | 'replaceOne' | 'putOne';
     find?: DatabaseRulesIOPrescription['find'];
-    value: DatabaseRulesIOPrescription['value'];
+    value?: DatabaseRulesIOPrescription['value'];
     path: string;
 }
 
@@ -242,9 +242,9 @@ interface MSocketError {
 }
 
 interface TransformMediaOption {
-    localBuffer: Buffer,
-    request?: express.Request
-};
+    localBuffer: Buffer;
+    request?: express.Request;
+}
 
 interface TransformMediaRoute {
     route: typeof RegExp | string;

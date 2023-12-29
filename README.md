@@ -87,5 +87,3 @@ See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the 
 MIT
 
 ---
-
-<!-- TODO: verifyToken(), checkToken(), validateToken() -->
