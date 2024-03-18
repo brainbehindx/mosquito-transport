@@ -1,4 +1,4 @@
-import { Auth, Db, Document, SortDirection, UpdateDescription } from "mongodb";
+import { Auth, Db, Document, MongoClient, SortDirection, UpdateDescription } from "mongodb";
 import express from "express";
 import { CorsOptions } from "cors";
 import { Sort } from "mongodb";
@@ -7,6 +7,7 @@ import { UpdateFilter } from "mongodb";
 import type { IncomingHttpHeaders } from "http";
 import type { ParsedUrlQuery } from "querystring";
 import { Socket } from "socket.io";
+import { TokenPayload } from "google-auth-library";
 
 interface SimpleError {
     simpleError?: {
@@ -81,11 +82,13 @@ interface FallbackAuthConfig {
 interface SneakSignupAuthConfig {
     email?: string;
     password?: string;
+    photo?: string;
     name?: string;
     metadata: Object
     token?: string;
     request: express.Request;
     method: 'custom' | 'google' | 'apple' | 'github' | 'twitter' | 'facebook';
+    providerData?: TokenPayload;
 }
 
 interface StaticContentProps {
@@ -252,7 +255,16 @@ interface TransformMediaRoute {
     transform: (options: TransformMediaOption) => Buffer | string | null | undefined;
 }
 
-interface MosquitoDbServerConfig {
+interface MongoInstances {
+    defaultName?: string;
+    instance: MongoClient;
+}
+
+interface MongoInstancesMap {
+    [key: 'default' | 'admin' | string]: MongoInstances;
+}
+
+interface MosquitoServerConfig {
     projectName: string;
     signerKey: string;
     storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
@@ -264,10 +276,10 @@ interface MosquitoDbServerConfig {
     logger?: LogLevel | LogLevel[];
     externalAddress?: string;
     hostname?: string;
-    dbUrl?: string;
-    dbName?: string;
+    mongoInstances: MongoInstancesMap;
     mergeAuthAccount?: boolean;
     transformMediaRoute?: '*' | TransformMediaRoute[];
+    transformMediaCleanupTimeout?: string;
     sneakSignupAuth?: (config: SneakSignupAuthConfig) => SneakSignupAuthResult;
     googleAuthConfig?: GoogleAuthConfig;
     appleAuthConfig?: AppleAuthConfig;
@@ -287,6 +299,7 @@ interface MosquitoDbServerConfig {
     dumpsterPath?: string;
     e2eKeyPair?: string[] | undefined;
     enforceE2E?: boolean;
+    preMiddlewares?: Function[] | Function;
 }
 
 interface UserProfile {
@@ -362,7 +375,11 @@ interface WriteCommand {
 interface DisconnectTaskInspector extends SimpleError {
     status?: 'completed' | 'error' | 'cancelled';
     committed?: boolean;
-    task?: ({ commands: WriteCommand, dbName?: string, dbUrl?: string })
+    task?: ({
+        commands: WriteCommand;
+        dbName?: string;
+        dbUrl?: string;
+    })
 }
 
 interface StorageSnapshot {
@@ -378,7 +395,7 @@ interface RawBodyRequest extends express.Request {
 }
 
 export default class MosquitoDbServer {
-    constructor(config: MosquitoDbServerConfig);
+    constructor(config: MosquitoServerConfig);
 
     getDatabase(dbName?: string, dbUrl?: string): Db;
 
@@ -410,6 +427,7 @@ export default class MosquitoDbServer {
     listenStorage(callback?: (snapshot: StorageSnapshot) => void): () => void;
     uploadBuffer(destination: string, buffer: Buffer): Promise<string>;
     deleteFile(path: string): Promise<void>;
+    deleteFolder(path: string): Promise<void>;
     listenNewUser(callback?: (user: NewUserAuthData) => void): void;
     listenDeletedUser(callback?: (uid: string) => void): void;
     inspectDocDisconnectionTask(callback?: (data: DisconnectTaskInspector) => void): void;
