@@ -1,7 +1,7 @@
 {
   "name": "mosquito-transport",
   "version": "1.4.3",
-  "description": "MosquitoTransport is a Mongodb BaaS management engine adapted with super fast, memory efficient and secured features",
+  "description": "MosquitoTransport is a powerful tool that helps persist and synchronize data between your MongoDB database and frontend applications",
   "main": "lib/index.js",
   "type": "module",
   "directories": {
@@ -26,7 +26,6 @@
     "self-database",
     "database",
     "serverless",
-    "BaaS",
     "firebase",
     "fully queried",
     "mongodb"
