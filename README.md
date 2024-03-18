@@ -6,25 +6,19 @@ Under the hood, mosquito-transport uses Mongodb to store it data and [express](h
 
 ## Key features of mosquito-transport include:
 
-- ### Data Persistence and Synchronization 🔁: 
+- Data Persistence and Synchronization 🔁: 
     - Seamlessly persist and synchronize data between MongoDB and frontend applications, ensuring consistency across all clients.
-
-- ### Self-Hosted Server 💾: 
+- Self-Hosted Server 💾: 
     - Host your own server infrastructure, giving you full control over data storage, access, and management.
-
-- ### User Authentication and Authorization 🔐:
+- User Authentication and Authorization 🔐:
     - Easily implement user authentication and authorization using JWT (JSON Web Tokens), providing secure access control to your application's resources.
-
-- ### End-to-End Encryption 🔗:
+- End-to-End Encryption 🔗:
     - Optionally enforce end-to-end encryption by allowing only encrypted data to be transmitted between client and server, ensuring data privacy and security.
-
-- ### Real-Time Data Updates 🚨:
+- Real-Time Data Updates 🚨:
     - Enable real-time updates to keep data synchronized across all clients in real-time, providing a seamless user experience.
-
-- ### Scalability and Performance 🚛:
+- Scalability and Performance 🚛:
     - Benefit from auto-scaling and high performance, allowing your application to handle varying workloads with ease.
-
-- ### Cross-Platform Compatibility 📱:
+- Cross-Platform Compatibility 📱:
     - Compatible with React Native and web applications, allowing you to build cross-platform solutions with ease.
 
 
