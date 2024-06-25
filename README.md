@@ -2,7 +2,7 @@
 
 MosquitoTransport is a powerful tool that enables developers to persist and synchronize data between their MongoDB database and frontend applications. It offers a centralized and self-hosted solution for managing server infrastructure and data, along with robust authentication, real-time data updates, scalability, and cross-platform compatibility.
 
-Under the hood, mosquito-transport uses Mongodb to store it data and [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request and [jwt](https://www.npmjs.com/package/jsonwebtoken) for signing authentication token, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package.
+Under the hood, mosquito-transport uses Mongodb to store it data, along with [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request and [jwt](https://www.npmjs.com/package/jsonwebtoken) for signing authentication token, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package.
 
 ## Key features of mosquito-transport include:
 
@@ -25,13 +25,13 @@ Under the hood, mosquito-transport uses Mongodb to store it data and [express](h
 ## Installation
 
 ```sh
-npm install mosquito-transport
+npm install mosquito-transport mongodb --save
 ```
 
 or using yarn
 
 ```sh
-yarn add mosquito-transport
+yarn add mosquito-transport mongodb
 ```
 
 ## Usage
@@ -41,15 +41,12 @@ import MosquitoTransportServer from "mosquito-transport";
 import { MongoClient } from 'mongodb';
 
 // create a mongodb instance
-const dbInstance = new MongoClient('mongodb://127.0.0.1:27017', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+const dbInstance = new MongoClient('mongodb://127.0.0.1:27017');
 
 dbInstance.connect().then(() => {
-    console.log('connected to mongodb at');
+    console.log('connected to mongodb');
 }).catch(e => {
-    console.error('failed to connected to mongodb at');
+    console.error('failed to connected to mongodb');
 });
 
 // setup your server
@@ -57,7 +54,8 @@ const serverApp = new MosquitoTransportServer({
   projectName: 'app_name',
   port: 4534, // defaults to 4291
   signerKey: 'random_90_hash_key_for_signing_jwt_tokens', // must be 90 length
-  accessKey: 'this_is_my_private_password', // keep this private if you don't provide databaseRules or storageRules
+  accessKey: 'some_unique_string',
+  externalAddress: 'https://example.yourdomain.com',
   mongoInstances: {
       // this is where user info and tokens is stored
       admin: {
@@ -99,13 +97,72 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
 ### SDKs And Hacks
 - [react-native-mosquito-transport](https://github.com/deflexable/react-native-mosquito-transport) for react native apps
 - [mosquito-transport-web](https://github.com/brainbehindx/mosquito-transport-js) for web platform
-- [mongodb-hack-middleware](https://github.com/deflexable/mongodb-middleware-utils) for random query hack and fulltext search hack
+- [mongodb-hack-middleware](https://github.com/deflexable/mongodb-middleware-utils) for querying random document hack and fulltext search hack
 
 ## Additional Documentations
-- [Logging Level](#logging-levels)
-- [Database Rules](#database-rules)
-- [Storage Rules](#storage-rules)
-- [Authentication](#authentication)
+- [MosquitoTransportServer Constructor](#MosquitoServerConfig)
+   - [projectName](#projectName)
+   - [signerKey](#signerKey)
+   - [port](#port)
+   - [storageRules](#storageRules)
+   - [databaseRules](#databaseRules)
+   - [accessTokenInterval](#accessTokenInterval)
+   - [refreshTokenExpiry](#refreshTokenExpiry)
+   - [accessKey](#accessKey)
+   - [mongoInstances](#mongoInstances)
+   - [externalAddress](#externalAddress)
+   - [hostname](#hostname)
+   - [enableSequentialUid](#enableSequentialUid)
+   - [mergeAuthAccount](#mergeAuthAccount)
+   - [sneakSignupAuth](#sneakSignupAuth)
+   - [uidLength](#uidLength)
+   - [enforceE2E](#enforceE2E)
+   - [e2eKeyPair](#e2eKeyPair)
+   - [logger](#logger)
+   - [dumpsterPath](#dumpsterPath)
+   - [preMiddlewares](#preMiddlewares)
+   - [transformMediaRoute](#transformMediaRoute)
+   - [transformMediaCleanupTimeout](#transformMediaCleanupTimeout)
+   <!-- - [googleAuthConfig](#googleAuthConfig)
+   - [appleAuthConfig](#appleAuthConfig)
+   - [facebookAuthConfig](#facebookAuthConfig)
+   - [githubAuthConfig](#githubAuthConfig)
+   - [twitterAuthConfig](#twitterAuthConfig)
+   - [fallbackAuthConfig](#fallbackAuthConfig) -->
+   - [staticContentProps](#staticContentProps)
+   - [staticContentMaxAge](#staticContentMaxAge)
+   - [staticContentCacheControl](#staticContentCacheControl)
+   - [corsOrigin](#corsOrigin)
+   - [maxRequestBufferSize](#maxRequestBufferSize)
+   - [maxUploadBufferSize](#maxUploadBufferSize)
+- [MosquitoTransportServer Getters](#MosquitoTransportServer-Getters)
+   - [storagePath](#storagePath)
+   - [sampleE2E](#sampleE2E)
+   - [express](#express)
+- [MosquitoTransportServer Methods](#MosquitoTransportServer-Methods)
+   - [getDatabase](#getDatabase)
+   - [listenDatabase](#listenDatabase)
+   - [listenStorage](#listenStorage)
+   - [listenHttpsRequest](#listenHttpsRequest)
+   - [listenNewUser](#listenNewUser)
+   - [listenDeletedUser](#listenDeletedUser)
+   - [verifyToken](#verifyToken)
+   - [validateToken](#validateToken)
+   - [invalidateToken](#invalidateToken)
+   - [getUserData](#getUserData)
+   - [updateUserProfile](#updateUserProfile)
+   - [updateUserClaims](#updateUserClaims)
+   - [updateUserEmailAddress](#updateUserEmailAddress)
+   - [updateUserPassword](#updateUserPassword)
+   - [updateUserEmailVerify](#updateUserEmailVerify)
+   - [signOutUser](#signOutUser)
+   - [disableUser](#disableUser)
+   - [uploadBuffer](#uploadBuffer)
+   - [deleteFile](#deleteFile)
+   - [deleteFolder](#deleteFolder)
+   - [inspectDocDisconnectionTask](#inspectDocDisconnectionTask)
+   - [linkToFile](#linkToFile)
+- [Authentication Setup](#authentication-setup)
    - [Merge Auth Account](#google-auth-setup)
    - [Google Auth Setup](#google-auth-setup)
    - [Apple Auth Setup](#apple-auth-setup)
@@ -115,6 +172,488 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
    - [Fallback Auth Setup](#fallback-auth-setup)
    - [Google Auth Setup](#google-auth-setup)
 
+
+## MosquitoServerConfig
+
+### projectName
+
+the name for your mosquito-transport instance. this is required and used internally by both the backend and frontend client.
+
+### signerKey
+
+a 90 character string which is used in signing jwt access and refresh token.
+
+### port
+
+the port number you want mosquito-transport instance to be running on
+
+### storageRules
+
+a function used for securing all file operations (`uploadFile`, `downloadFile`, `deleteFile`, `deleteFolder`) made by the frontend client.
+<!-- TODO: show examples -->
+
+### databaseRules
+
+a function used for securing all mongodb read and write operations made by the frontend client.
+<!-- show examples -->
+
+### accessTokenInterval
+
+numbers of milliseconds until generated access token expires. Defaults to `1 hour` (3600000).
+
+### refreshTokenExpiry
+
+numbers of milliseconds until generated refresh token expires. Defaults to `1 month` (2419200000).
+
+### accessKey
+
+a random string used by the frontend client for accessing internal resources.
+
+### mongoInstances
+
+an object that maps names to your mongodb instance. if no `dbRef` were provided, the `default` mongodb instance will be used.
+
+```js
+import MosquitoTransportServer from "mosquito-transport";
+import { MongoClient } from 'mongodb';
+
+// create a mongodb instance
+const dbInstance = new MongoClient('mongodb://127.0.0.1:27017');
+
+dbInstance.connect();
+
+const remoteInstance = new MongoClient('mongodb://other-searver.com');
+
+remoteInstance.connect();
+
+const serverApp = new MosquitoTransportServer({
+  ...otherProps,
+  mongoInstances: {
+      // frontend client are prohitted from accessing this instance
+      admin: {
+          instance: dbInstance,
+          defaultName: 'ADMIN_DB_NAME'
+      },
+      // this will be the default db if no dbRef was provided by the frontend client
+      default: {
+          instance: dbInstance,
+          defaultName: 'DEFAULT_DB_NAME'
+      },
+      // additional instance
+      remoteBackup: {
+           instance: remoteInstance,
+          defaultName: 'WEB_BACKUP'
+      }
+  }
+});
+
+// then you can access this via frontend client
+
+const webInstance = new MosquitoTransport({
+    projectUrl: 'http://localhost:4534/app_name',
+    accessKey: 'some_unique_string',
+    ...options
+});
+
+webInstance.getDatabase(
+    // if this is undefined, the server will use `defaultName` as the default name
+    'database_name',
+    // the name of the mongoInstances map
+    'remoteBackup'
+).collection('transactions').findOne({ date: { $gt: 1719291129937 } }).get();
+
+// or access the default db
+
+webInstance.getDatabase().collection('testing');
+
+```
+
+### externalAddress
+
+this should be a valid http or https link. it is used internally while signing jwt and for prefixing storage `downloadUrl` when uploading a file by frontend client.
+
+### hostname
+
+if no `externalAddress` was provided, `externalAddress` will be a construct as follows:
+
+```js
+`http://${hostname || 'localhost'}:${port}`
+```
+
+### enableSequentialUid
+
+true if you want new users to be assign a sequential `uid` like 0, 1, 2, 3, 4, 5, ...,
+
+### mergeAuthAccount
+
+true if you want to threat the same email address from different auth provider as a single user.
+
+### sneakSignupAuth
+
+a function use in preventing signup and adding metadata before signup
+
+```js
+import MosquitoTransportServer from "mosquito-transport";
+
+const blacklisted_country = ['RU', 'AF', 'NG'];
+
+const serverApp = new MosquitoTransportServer({
+    ...otherProps,
+    sneakSignupAuth: ({ request, email, name, password, method }) => {
+        const geo = lookupIpAddress(request.ip);
+        if (!geo) throw 'Failed to lookup request location';
+
+        if (blacklisted_country.includes(geo.country))
+            throw 'This platform is not yet available in your location';
+        
+        if (method === 'custom' && password.length < 5)
+            throw 'password is too short';
+
+        const uid = randomString(11),
+            lang = getCountryLang(geo?.country || 'US');
+
+        return {
+            metadata: {
+                country: geo.country,
+                city: geo.city,
+                location: geo.ll,
+                tz: geo?.timezone,
+                ip: request.ip,
+                locale: 'en'
+            },
+            uid
+        };
+    }
+});
+```
+
+### uidLength
+
+the length of generated user uid. default to `30`.
+
+### enforceE2E
+
+true if you want to enforce end-to-end encryption for all request made by the server
+
+### e2eKeyPair
+
+an array of string, `[public key, private key]`. You can get a sample as follows:
+
+```js
+import MosquitoTransportServer from "mosquito-transport";
+
+const serverApp = new MosquitoTransportServer({ ...options });
+
+console.log('pair key', serverApp.sampleE2E);
+```
+### dumpsterPath
+
+path to where mosquito-transport stores it files. Defaults to the current working directory.
+
+### preMiddlewares
+
+a function to intercept express. This will be the first middleware executed by express.
+
+```js
+import MosquitoTransportServer from "mosquito-transport";
+
+const serverApp = new MosquitoTransportServer({
+    ...otherProps,
+    preMiddlewares: (req, res, next) => {
+        // do some enforcement checking here
+        next();
+    } 
+});
+```
+
+### transformMediaRoute
+
+this option helps you to transform image and video files on the fly without having to write boilerplate code for this.
+All you have to do is set `transformMediaRoute` to `*` as follows:
+
+```js
+import MosquitoTransportServer from "mosquito-transport";
+
+const serverApp = new MosquitoTransportServer({
+    ...otherProps,
+    transformMediaRoute: '*'
+});
+```
+
+now you can automatically transform images and video by appending some query parameter to the url of the image or video you're accessing.
+
+#### Image Parameters
+the following list the parameters available for image media
+
+- `width` or `w`: a number that sets the width of the image
+- `height` or `h`: a number that sets the height of the image
+- `top` or `t`: a number that sets the top position of the image
+- `left` or `l`: a number that sets the left position of the image
+- `grayscale`or `gray`: set this to `1` or `true` if you want the image in grayscale
+-  `blur` or `b`: either set this to `true` to blur the image or a value between 0.3 and 1000 representing the sigma of the Gaussian mask, where sigma = 1 + radius / 2.
+- `flip`: set to `true` or `1` to flip the image about the vertical Y axis. The use of flip implies the removal of the EXIF Orientation tag, if any.
+- `flop`: set to `true` or `1` to flop the image about the horizontal X axis. The use of flop implies the removal of the EXIF Orientation tag, if any.
+- `format` or `o`: this set the output format of the image, can be any of `avif`, `dz`, `fits`, `gif`, `heif`, `input`, `jpeg`, `jpg`, `jp2`, `jxl`, `magick`, `openslide`, `pdf`, `png`, `ppm`, `raw`, `svg`, `tiff`, `tif`, `v` or `webp`
+- `quality` or `q`: set the quality of the image from a scale of 0 - 1.
+- `lossless` or `loss`: set to `1` or `true` to use lossless compression mode
+
+***Example***
+the following transform the image at `http://localhost:5622/storage/users/richard/photo.png`:
+
+```js
+// resize the image to 70 width and scale the height respectively
+`http://localhost:5622/storage/users/richard/photo.png?w=70`
+
+// apply grayscale to the image and set the quality to 0.3
+`http://localhost:5622/storage/users/richard/photo.png?grayscale=true&q=0.3`
+```
+
+#### Video Parameters
+the following list the parameters available for video media
+
+- `width` or `w`: a number that sets the width of the video.
+- `height` or `h`: a number that sets the height of the video.
+- `top` or `t`: a number that sets the top position of the video.
+- `left` or `l`: a number that sets the left position of the video.
+- `mute`: set to `1` or `true` to mute the video.
+- `vbr`: set the bitrate of the video. Equivalent to `-v:a` command of ffmpeg.
+- `abr`: set the bitrate of the audio. Equivalent to `-b:a` command of ffmpeg.
+- `fps`: an integer to set the frame per seconds of the video. This parameter plays a significant role in reducing the output size and processing time of the video. Equivalent to `-r` command of ffmpeg.
+- `grayscale`or `gray`: set this to `1` or `true` if you want the video in grayscale
+- `flip`: set to `true` or `1` to flip the video about the vertical Y axis.
+- `flop`: set to `true` or `1` to flop the video about the horizontal X axis.
+- `quality` or `q`: set the quality of the video from a scale of 0 - 1.
+- `lossless` or `loss`: set to `1` or `true` to use lossless compression mode
+- `preset`: set the `-preset` of ffmpeg. Defaults to medium.
+- `format` or `o`: this set the output format of the image, can be any of `avif`, `dz`, `fits`, `gif`, `heif`, `input`, `jpeg`, `jpg`, `jp2`, `jxl`, `magick`, `openslide`, `pdf`, `png`, `ppm`, `raw`, `svg`, `tiff`, `tif`, `v` or `webp`
+
+***Example***
+the following transform the video at `http://localhost:5622/storage/video/lil-yatchy/range-rover-sport-truck.mp4`:
+
+```js
+// resize the video to 200 height and scale the width respectively
+`http://localhost:5622/storage/users/richard/photo.png?height=200`
+
+// apply grayscale to the video, set the quality to 0.7 and set the fps to 30
+`http://localhost:5622/storage/users/richard/photo.png?grayscale=true&q=0.7&fps=30`
+```
+***Additional Dependency***
+Internally mosquito-transport uses `sharp` to transform images and `ffmpeg` to transform video, so make sure these library are installed before setting `transformMediaRoute: '*'`
+
+```sh
+yarn add sharp
+```
+
+### transformMediaCleanupTimeout
+
+This is the numbers of milliseconds to cache the transformed video media file before it is deleted. This is basically to avoid the overhead processing time next time the frontend client tries to access it. Defaults to 7 hours.
+
+# logger
+
+can either be a string or array containing any of the following:
+
+- `all`: log all requests
+- `auth`: log authentication requests
+- `database`: log database requests
+- `storage`: log storage requests
+- `external-requests`: log api requests
+- `served-content`: log serve content requests
+- `database-snapshot`: log database snapshot events
+
+### staticContentProps
+
+Static Content Props for storage file response. See [SendFileOptions](https://github.com/expressjs/expressjs/express-serve-static-core/index.d.ts)
+
+### staticContentMaxAge
+
+Provide a max-age in milliseconds for http caching. This will only be applied to storage file response.
+
+### staticContentCacheControl
+
+Enable or disable setting Cache-Control response header. This will only be applied to storage file response.
+
+### corsOrigin
+
+set cors origin for all outgoing request
+
+### maxRequestBufferSize
+
+the maximum size in bytes of each request payload. Default to 100MB
+
+### maxUploadBufferSize
+
+the maximum size in byte of each uploading request payload. Default to 10GB
+
+## MosquitoTransportServer-Getters
+
+### storagePath
+
+get the directory where storage files are saved
+
+### sampleE2E
+
+quickly get an end-to-end encryption [pair key](#[e2eKeyPair]) for your server
+
+### express
+
+get the internal express instance use
+
+## MosquitoTransportServer-Methods
+
+### getDatabase
+
+returns the db instance of mongodb.
+
+```js
+serverApp.getDatabase(
+    // if this is undefined, the server will use `defaultName` as the default name
+    'database_name',
+    // the name of the mongoInstances map
+    'remoteBackup'
+).collection('transactions').findOne({ date: { $gt: 1719291129937 } }).get();
+
+// or access the default db
+
+serverApp.getDatabase().collection('testing');
+```
+
+### listenDatabase
+
+listen to insert, update and delete events from mongodb
+
+```js
+serverApp.listenDatabase('transactions', async snapshot => {
+    console.log('transaction snapshot', snapshot);
+});
+```
+
+### listenStorage
+
+listen to storage event. these event are typically made by the frontend client.
+
+```js
+serverApp.listenStorage(async event => {
+    console.log('storage event', event);
+});
+```
+
+### listenHttpsRequest
+
+listen to incoming request
+
+```js
+// only allow authenticated user to access this endpoint 
+serverApp.listenHttpsRequest('check_user', async (req, res, user) => {
+    // user will always be present
+    res.status(200).send({ uid: user.uid });
+}, {
+    enforceVerifiedUser: true,
+    enforceUser: true
+});
+
+// optionally allow un-authenticated user
+serverApp.listenHttpsRequest('server_time', async (req, res, user) => {
+    // user may be present
+    if (user) {
+        res.status(200).send({ uid: user.uid });
+    } else {
+        res.status(403).send({ error: 'No user provided' });
+    }
+}, {
+    validateUser: true
+});
+
+// disable end-to-end encrytion for this endpoint and user authentication
+serverApp.listenHttpsRequest('server_time', async (req, res) => {
+    res.status(200).send({ currentData: Date.now() });
+}, {
+    rawEntry: true
+});
+```
+
+### listenNewUser
+
+listen to new user
+
+```js
+serverApp.listenNewUser(async user => {
+    console.log('new signup', user);
+});
+```
+
+### listenDeletedUser
+
+listen to deletedUser
+
+```js
+serverApp.listenDeletedUser(uid => {
+    console.log('deleted user', uid);
+});
+```
+
+### verifyToken
+
+verify token to check if it was trully created using signerKey without checking against the expiry or local token reference
+
+### validateToken
+
+verify token to check if it was trully created using signerKey and checking against the expiry and local token reference
+
+### invalidateToken
+
+remove local reference of a token
+
+### getUserData
+
+get the user data belonging to a user
+
+### updateUserProfile
+
+update the profile data of a user
+
+### updateUserClaims
+
+update the custom claim of a user
+
+### updateUserEmailAddress
+
+update the email address of a user
+
+### updateUserPassword
+
+update the user password of a user
+
+### updateUserEmailVerify
+
+update the verify status of a user
+
+### signOutUser
+
+purge all tokens references for a user and sign-out the user immediately
+
+### disableUser
+
+disable a user
+
+### uploadBuffer
+
+upload a file to the storage directory
+
+### deleteFile
+
+delete file in the storage directory
+
+### deleteFolder
+
+delete folder in the storage directory
+
+### linkToFile
+
+convert a link to local file path.
+
+```js
+serverApp.linkToFile('http://localhost:5622/storage/users/richard/photo.png');
+```
 
 <!-- ## Platform using MosquitoTransport in production
 - [Heavenya - christian events](https://heavenya.com)

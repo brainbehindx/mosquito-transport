@@ -1,4 +1,4 @@
-import { Auth, Db, Document, MongoClient, SortDirection, UpdateDescription } from "mongodb";
+import { Db, Document, MongoClient, SortDirection, UpdateDescription } from "mongodb";
 import express from "express";
 import { CorsOptions } from "cors";
 import { Sort } from "mongodb";
@@ -50,10 +50,10 @@ interface DatabaseRulesSnapshot {
     endpoint: '_readDocument' | '_queryCollection' | '_writeDocument' | '_writeMapDocument' | '_documentCount' | '_listenCollection' | '_listenDocument' | '_startDisconnectWriteTask' | '_cancelDisconnectWriteTask';
     prescription?: DatabaseRulesIOPrescription | DatabaseRulesBatchWritePrescription;
     dbName?: string;
-    dbUrl?: string;
+    dbRef?: string;
 }
 
-type LogLevel = 'all' | 'disabled' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot';
+type LogLevel = 'all' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot';
 
 interface GoogleAuthConfig {
     clientID?: string;
@@ -223,6 +223,8 @@ interface MSocketHandshake {
     };
     /**
      * the access token of the user that initiated this handshake
+     * 
+     * N/B: make sure to always revalidate this when making sensitive request
      */
     userToken: string | undefined;
 }
@@ -251,7 +253,7 @@ interface TransformMediaOption {
 
 interface TransformMediaRoute {
     route: typeof RegExp | string;
-    type?: string;
+    transformAs?: 'image' | 'video';
     transform: (options: TransformMediaOption) => Buffer | string | null | undefined;
 }
 
@@ -265,21 +267,155 @@ interface MongoInstancesMap {
 }
 
 interface MosquitoServerConfig {
+    /**
+     * the name for your mosquito-transport instance. this is required and used internally by both the backend and frontend client
+     */
     projectName: string;
+    /**
+     * a 90 character string which is used in signing jwt access and refresh token
+     */
     signerKey: string;
+
     storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
     databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void> | undefined;
     onSocketSnapshot?: (snapshot?: MSocketSnapshot, error?: MSocketError) => void;
+    /**
+     * the port number you want mosquito-transport instance to be running on
+     */
     port?: number;
+    /**
+     * true if you want new users to be assign a sequential `uid` like 0, 1, 2, 3, 4, 5, ...,
+     * 
+     * Please note: this is an experimental feature
+     */
     enableSequentialUid?: boolean;
+    /**
+     * a random string used by the frontend client for accessing internal resources
+     */
     accessKey: string;
+    /**
+     * can either be a string or array containing any of the following:
+     * 
+     * - `all`: log all requests
+     * - `auth`: log authentication requests
+     * - `database`: log database requests
+     * - `storage`: log storage requests
+     * - `external-requests`: log api requests
+     * - `served-content`: log serve content requests
+     * - `database-snapshot`: log database snapshot events
+     */
     logger?: LogLevel | LogLevel[];
+    /**
+     * this should be a valid http or https link. it is used internally while signing jwt and for prefixing storage `downloadUrl` when uploading a file by frontend client
+     */
     externalAddress?: string;
+    /**
+     * if no `externalAddress` was provided, `externalAddress` will be a construct as follows:
+     * 
+     * ```js
+     * `http://${hostname || 'localhost'}:${port}`
+     * ```
+     */
     hostname?: string;
+    /**
+     * an object that maps names to your mongodb instance. if no `dbRef` were provided, the `default` mongodb instance will be used.
+     * 
+     * ```js
+     * import MosquitoTransportServer from "mosquito-transport";
+     * import { MongoClient } from 'mongodb';
+     * 
+     * // create a mongodb instance
+     * const dbInstance = new MongoClient('mongodb://127.0.0.1:27017');
+     * dbInstance.connect();
+     * 
+     * const remoteInstance = new MongoClient('mongodb://other-searver.com');
+     * remoteInstance.connect();
+     * 
+     * const serverApp = new MosquitoTransportServer({
+     *   ...otherProps,
+     *   mongoInstances: {
+     *     // frontend client are prohitted from accessing this instance
+     *     admin: {
+     *        instance: dbInstance,
+     *        defaultName: 'ADMIN_DB_NAME'
+     *     },
+     *     // this will be the default db if no dbRef was provided by the frontend client
+     *     default: {
+     *        instance: dbInstance,
+     *        defaultName: 'DEFAULT_DB_NAME'
+     *     },
+     *     // additional instance
+     *     remoteBackup: {
+     *         instance: remoteInstance,
+     *        defaultName: 'WEB_BACKUP'
+     *     }
+     *   }
+     * });
+     * 
+     * // then you can access this via frontend client
+     * 
+     * const webInstance = new MosquitoTransport({
+     *   projectUrl: 'http://localhost:4534/app_name',
+     *   accessKey: 'some_unique_string',
+     *   ...options
+     * });
+     * 
+     * webInstance.getDatabase(
+     *   // if this is undefined, the server will use `defaultName` as the default name
+     *   'database_name',
+     *   // the name of the mongoInstances map
+     *   'remoteBackup'
+     * ).collection('transactions').findOne({ date: { $gt: 1719291129937 } }).get();
+     * 
+     * // or access the default db
+     * 
+     * webInstance.getDatabase().collection('testing');
+     * ```
+     */
     mongoInstances: MongoInstancesMap;
+    /**
+     * true if you want to threat the same email address from different auth provider as a single user
+     */
     mergeAuthAccount?: boolean;
     transformMediaRoute?: '*' | TransformMediaRoute[];
-    transformMediaCleanupTimeout?: string;
+    /**
+     * This is the numbers of milliseconds to cache the transformed video media file before it is deleted. This is basically to avoid the overhead processing time next time the frontend client tries to access it. Defaults to 7 hours.
+     */
+    transformMediaCleanupTimeout?: number;
+    /**
+     * 
+     * a function use in preventing signup and adding metadata before signup
+     * ```js
+     * import MosquitoTransportServer from "mosquito-transport";
+     * const blacklisted_country = ['RU', 'AF', 'NG'];
+     * 
+     * const serverApp = new MosquitoTransportServer({
+     *     ...otherProps,
+     *     sneakSignupAuth: ({ request, email, name, password, method }) => {
+     *         const geo = lookupIpAddress(request.ip);
+     *         if (!geo) throw 'Failed to lookup request location';
+     *         if (blacklisted_country.includes(geo.country))
+     *             throw 'This platform is not yet available in your location';
+     *         
+     *         if (method === 'custom' && password.length < 5)
+     *             throw 'password is too short';
+     *         const uid = randomString(11),
+     *             lang = getCountryLang(geo?.country || 'US');
+     *         return {
+     *             metadata: {
+     *                 country: geo.country,
+     *                 city: geo.city,
+     *                 location: geo.ll,
+     *                 tz: geo?.timezone,
+     *                 ip: request.ip,
+     *                 locale: 'en'
+     *             },
+     *             uid
+     *         };
+     *     }
+     * });
+     * ```
+     */
     sneakSignupAuth?: (config: SneakSignupAuthConfig) => SneakSignupAuthResult;
     googleAuthConfig?: GoogleAuthConfig;
     appleAuthConfig?: AppleAuthConfig;
@@ -297,9 +433,13 @@ interface MosquitoServerConfig {
     accessTokenInterval?: number;
     refreshTokenExpiry?: number;
     dumpsterPath?: string;
+    /**
+     * require an e2e public and private key like:
+     * `['public key', 'private key']`
+     */
     e2eKeyPair?: string[] | undefined;
     enforceE2E?: boolean;
-    preMiddlewares?: Function[] | Function;
+    preMiddlewares?: express.Handler | express.Handler[];
 }
 
 interface UserProfile {
@@ -378,7 +518,7 @@ interface DisconnectTaskInspector extends SimpleError {
     task?: ({
         commands: WriteCommand;
         dbName?: string;
-        dbUrl?: string;
+        dbRef?: string;
     })
 }
 
@@ -394,10 +534,29 @@ interface RawBodyRequest extends express.Request {
     rawBody: Buffer;
 }
 
-export default class MosquitoDbServer {
+export default class MosquitoTransportServer {
     constructor(config: MosquitoServerConfig);
 
-    getDatabase(dbName?: string, dbUrl?: string): Db;
+    /**
+     * the directory where storage files are saved
+     */
+    get storagePath(): string;
+
+    /**
+     * quickly get an end-to-end encryption pair key for your server
+     * @returns [public_string, private_string]
+     */
+    get sampleE2E(): string[];
+
+    get express(): express.Application;
+
+    getDatabase(dbName?: string, dbRef?: string): Db;
+
+    /**
+     * purge all tokens references for a user and sign-out the user immediately
+     * @param uid uid of the user you are signing out
+     */
+    signOutUser(uid: string): Promise<void>;
 
     /**
      * verify token to check if it was trully created using signerKey without checking against the expiry or local token reference
@@ -422,6 +581,10 @@ export default class MosquitoDbServer {
      * @param isRefreshToken - set this to true if token is a refresh token
      */
     invalidateToken(token: string, isRefreshToken?: boolean): Promise<void | boolean>;
+
+    /**
+     * listen to incoming request
+     */
     listenHttpsRequest(route: string, callback?: (request: RawBodyRequest, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoDbHttpOptions): void;
     listenDatabase(collection: string, callback?: (data: DatabaseListenerCallbackData) => void, options?: DatabaseListenerOption): void;
     listenStorage(callback?: (snapshot: StorageSnapshot) => void): () => void;
