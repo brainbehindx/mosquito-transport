@@ -16,6 +16,10 @@ interface SimpleError {
     }
 }
 
+interface GeneralObject {
+    [key: string]: any
+}
+
 interface PureHttpRequest extends express.Request {
     res: undefined
 }
@@ -453,13 +457,29 @@ interface UserProfile {
 interface AuthData {
     email?: string;
     metadata: Object;
-    signupMethod: 'google' | 'apple' | 'custom' | 'twitter' | 'facebook' | 'github' | string;
+    signupMethod: 'google' | 'apple' | 'custom' | 'github' | 'twitter' | 'facebook' | string;
+    currentAuthMethod: 'google' | 'apple' | 'custom' | 'github' | 'twitter' | 'facebook' | string;
     joinedOn: number;
     uid: string;
     claims: Object;
     emailVerified: boolean;
-    profile: UserProfile;
+    tokenID: string;
     disabled: boolean;
+    entityOf: string;
+    profile: {
+        photo: string;
+        name: string;
+    },
+    exp: number;
+    aud: string;
+    iss: string;
+    sub: string;
+}
+
+interface RefreshTokenData {
+    uid: string;
+    tokenID: string;
+    isRefreshToken: true;
 }
 
 interface UserData extends AuthData {
@@ -559,6 +579,11 @@ export default class MosquitoTransportServer {
     signOutUser(uid: string): Promise<void>;
 
     /**
+     * parse jwt token
+     */
+    parseToken(token: string): AuthData;
+
+    /**
      * verify token to check if it was trully created using signerKey without checking against the expiry or local token reference
      * 
      * @param token - the token to be verified
@@ -572,7 +597,7 @@ export default class MosquitoTransportServer {
      * @param token - the token to be validated
      * @param isRefreshToken - set this to true if token is a refresh token
      */
-    validateToken(token: string, isRefreshToken?: boolean): Promise<AuthData>;
+    validateToken(token: string, isRefreshToken?: boolean): Promise<AuthData | RefreshTokenData>;
 
     /**
      * remove local reference of a token
@@ -595,6 +620,7 @@ export default class MosquitoTransportServer {
     listenDeletedUser(callback?: (uid: string) => void): void;
     inspectDocDisconnectionTask(callback?: (data: DisconnectTaskInspector) => void): void;
     updateUserProfile(uid: string, profile: UserProfile): Promise<void>;
+    updateUserMetadata(uid: string, metadata: GeneralObject): Promise<void>;
     updateUserClaims(uid: string, claims: Object): Promise<void>;
     updateUserEmailAddress(uid: string, email: string): Promise<void>;
     updateUserPassword(uid: string, password: string): Promise<void>;

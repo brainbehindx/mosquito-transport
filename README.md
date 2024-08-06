@@ -151,6 +151,7 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
    - [invalidateToken](#invalidateToken)
    - [getUserData](#getUserData)
    - [updateUserProfile](#updateUserProfile)
+   - [updateUserMetadata](#updateUserMetadata)
    - [updateUserClaims](#updateUserClaims)
    - [updateUserEmailAddress](#updateUserEmailAddress)
    - [updateUserPassword](#updateUserPassword)
@@ -432,10 +433,10 @@ the following transform the video at `http://localhost:5622/storage/video/lil-ya
 
 ```js
 // resize the video to 200 height and scale the width respectively
-`http://localhost:5622/storage/users/richard/photo.png?height=200`
+`http://localhost:5622/storage/video/lil-yatchy/range-rover-sport-truck.mp4?height=200`
 
 // apply grayscale to the video, set the quality to 0.7 and set the fps to 30
-`http://localhost:5622/storage/users/richard/photo.png?grayscale=true&q=0.7&fps=30`
+`http://localhost:5622/storage/video/lil-yatchy/range-rover-sport-truck.mp4?grayscale=true&q=0.7&fps=30`
 ```
 ***Additional Dependency***
 Internally mosquito-transport uses `sharp` to transform images and `ffmpeg` to transform video, so make sure these library are installed before setting `transformMediaRoute: '*'`
@@ -591,6 +592,10 @@ serverApp.listenDeletedUser(uid => {
 });
 ```
 
+### parseToken
+
+parse jwt token
+
 ### verifyToken
 
 verify token to check if it was trully created using signerKey without checking against the expiry or local token reference
@@ -610,6 +615,10 @@ get the user data belonging to a user
 ### updateUserProfile
 
 update the profile data of a user
+
+### updateUserMetadata
+
+update user metadata
 
 ### updateUserClaims
 
