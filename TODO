@@ -1,4 +1,7 @@
 - add method for creating user account
 - add method for login user account
-- add two factor auth functionality
-- add ddos
+- add two factor auth functionality to jwt token
+- uniquify db json event
+- document extraction
+- blobify backup
+- hash uploaded files to reduce storage

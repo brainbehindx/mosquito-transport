@@ -97,7 +97,7 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
 ### SDKs And Hacks
 - [react-native-mosquito-transport](https://github.com/deflexable/react-native-mosquito-transport) for react native apps
 - [mosquito-transport-web](https://github.com/brainbehindx/mosquito-transport-js) for web platform
-- [mongodb-hack-middleware](https://github.com/deflexable/mongodb-middleware-utils) for querying random document hack and fulltext search hack
+- [mongodb-hack-middleware](https://github.com/deflexable/mongodb-middleware-utils) hacks for querying random document and fulltext search
 
 ## Additional Documentations
 - [MosquitoTransportServer Constructor](#MosquitoServerConfig)
@@ -115,6 +115,7 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
    - [enableSequentialUid](#enableSequentialUid)
    - [mergeAuthAccount](#mergeAuthAccount)
    - [sneakSignupAuth](#sneakSignupAuth)
+   - [onUserMounted](#onUserMounted)
    - [uidLength](#uidLength)
    - [enforceE2E](#enforceE2E)
    - [e2eKeyPair](#e2eKeyPair)
@@ -294,7 +295,7 @@ true if you want to threat the same email address from different auth provider a
 a function use in preventing signup and adding metadata before signup
 
 ```js
-import MosquitoTransportServer from "mosquito-transport";
+import MosquitoTransportServer, { AUTH_PROVIDER_ID } from "mosquito-transport";
 
 const blacklisted_country = ['RU', 'AF', 'NG'];
 
@@ -307,7 +308,7 @@ const serverApp = new MosquitoTransportServer({
         if (blacklisted_country.includes(geo.country))
             throw 'This platform is not yet available in your location';
         
-        if (method === 'custom' && password.length < 5)
+        if (method === AUTH_PROVIDER_ID.PASSWORD && password.length < 5)
             throw 'password is too short';
 
         const uid = randomString(11),
@@ -327,6 +328,33 @@ const serverApp = new MosquitoTransportServer({
     }
 });
 ```
+
+### onUserMounted
+
+ a function that is called when a user's mosquito client sdk is authenticated and online
+ 
+ ```js
+ import MosquitoTransportServer from "mosquito-transport";
+ 
+ const serverApp = new MosquitoTransportServer({
+    ...otherProps,
+    onUserMounted: ({ user, headers }) => {
+         // update the user online status
+        serverApp.collection('users').updateOne({ _id: user.uid }, { 
+            status: 'online',
+            onlineOn: Date.now() 
+        });
+ 
+        return () => {
+            // update the user offline status
+            serverApp.collection('users').updateOne({ _id: user.uid }, {
+                status: 'offline',
+                offlineOn: Date.now()
+            });
+        }
+    }
+ });
+ ```
 
 ### uidLength
 
@@ -353,7 +381,9 @@ path to where mosquito-transport stores it files. Defaults to the current workin
 
 ### preMiddlewares
 
-a function to intercept express. This will be the first middleware executed by express.
+this will be the first middleware that will be executed for all incoming http request to this mosquito-transport instance.
+ 
+You may intercept this middleware to manage and prevent ddos attack and handle some custom route such as `favicon.ico`
 
 ```js
 import MosquitoTransportServer from "mosquito-transport";

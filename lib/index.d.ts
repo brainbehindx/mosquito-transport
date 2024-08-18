@@ -83,15 +83,19 @@ interface FallbackAuthConfig {
 
 }
 
+interface RawObject {
+    [key: string]: any
+}
+
 interface SneakSignupAuthConfig {
     email?: string;
     password?: string;
     photo?: string;
     name?: string;
-    metadata: Object
+    metadata: RawBodyRequest;
     token?: string;
     request: express.Request;
-    method: 'custom' | 'google' | 'apple' | 'github' | 'twitter' | 'facebook';
+    method: auth_provider_id_values;
     providerData?: TokenPayload;
 }
 
@@ -270,6 +274,17 @@ interface MongoInstancesMap {
     [key: 'default' | 'admin' | string]: MongoInstances;
 }
 
+interface UserMountedEvent {
+    /**
+     * the user object mounted
+     */
+    user: AuthData;
+    /**
+     * The headers sent as part of the handshake
+     */
+    headers: IncomingHttpHeaders;
+}
+
 interface MosquitoServerConfig {
     /**
      * the name for your mosquito-transport instance. this is required and used internally by both the backend and frontend client
@@ -305,7 +320,7 @@ interface MosquitoServerConfig {
      * - `database`: log database requests
      * - `storage`: log storage requests
      * - `external-requests`: log api requests
-     * - `served-content`: log serve content requests
+     * - `served-content`: log storage GET requests
      * - `database-snapshot`: log database snapshot events
      */
     logger?: LogLevel | LogLevel[];
@@ -389,8 +404,9 @@ interface MosquitoServerConfig {
     /**
      * 
      * a function use in preventing signup and adding metadata before signup
+     * @example
      * ```js
-     * import MosquitoTransportServer from "mosquito-transport";
+     * import MosquitoTransportServer, { AUTH_PROVIDER_ID } from "mosquito-transport";
      * const blacklisted_country = ['RU', 'AF', 'NG'];
      * 
      * const serverApp = new MosquitoTransportServer({
@@ -401,11 +417,11 @@ interface MosquitoServerConfig {
      *         if (blacklisted_country.includes(geo.country))
      *             throw 'This platform is not yet available in your location';
      *         
-     *         if (method === 'custom' && password.length < 5)
+     *         if (method === AUTH_PROVIDER_ID.PASSWORD && password.length < 5)
      *             throw 'password is too short';
      *         const uid = randomString(11),
      *             lang = getCountryLang(geo?.country || 'US');
-     *         return {
+     *         return Promise.resolve({
      *             metadata: {
      *                 country: geo.country,
      *                 city: geo.city,
@@ -415,12 +431,42 @@ interface MosquitoServerConfig {
      *                 locale: 'en'
      *             },
      *             uid
-     *         };
+     *         });
      *     }
      * });
      * ```
      */
-    sneakSignupAuth?: (config: SneakSignupAuthConfig) => SneakSignupAuthResult;
+    sneakSignupAuth?: (config: SneakSignupAuthConfig) => Promise<SneakSignupAuthResult>;
+    /**
+     * a function that is called when a user's mosquito client sdk is authenticated and online
+     * 
+     * @example
+     * ```js
+     * import MosquitoTransportServer from "mosquito-transport";
+     * 
+     * const serverApp = new MosquitoTransportServer({
+     *     ...otherProps,
+     *     onUserMounted: ({ user, headers }) => {
+     *         // update the user online status
+     *         serverApp.collection('users').updateOne({ _id: user.uid }, { 
+     *             status: 'online',
+     *             onlineOn: Date.now()  
+     *          });
+     * 
+     *         return () => {
+     *             // update the user offline status
+     *             serverApp.collection('users').updateOne({ _id: user.uid }, {
+     *                 status: Date.now(),
+     *                 offlineOn: Date.now() 
+     *             });
+     *         }
+     *     }
+     * });
+     * ```
+     * 
+     * @returns a function that is called when the user goes offline
+     */
+    onUserMounted?: (config: UserMountedEvent) => () => void;
     googleAuthConfig?: GoogleAuthConfig;
     appleAuthConfig?: AppleAuthConfig;
     facebookAuthConfig?: FacebookAuthConfig;
@@ -443,6 +489,11 @@ interface MosquitoServerConfig {
      */
     e2eKeyPair?: string[] | undefined;
     enforceE2E?: boolean;
+    /**
+     * this will be the first middleware that will be executed for all incoming http request to this mosquito-transport instance.
+     * 
+     * You may intercept this middleware to manage and prevent ddos attack and handle some custom route such as `favicon.ico`
+     */
     preMiddlewares?: express.Handler | express.Handler[];
 }
 
@@ -456,12 +507,12 @@ interface UserProfile {
 
 interface AuthData {
     email?: string;
-    metadata: Object;
-    signupMethod: 'google' | 'apple' | 'custom' | 'github' | 'twitter' | 'facebook' | string;
-    currentAuthMethod: 'google' | 'apple' | 'custom' | 'github' | 'twitter' | 'facebook' | string;
+    metadata: RawObject;
+    signupMethod: auth_provider_id_values;
+    currentAuthMethod: auth_provider_id_values;
     joinedOn: number;
     uid: string;
-    claims: Object;
+    claims: RawObject;
     emailVerified: boolean;
     tokenID: string;
     disabled: boolean;
@@ -488,10 +539,6 @@ interface UserData extends AuthData {
 
 interface JWTAuthData extends AuthData {
     token: string;
-    exp?: number;
-    aud?: string;
-    iss?: string;
-    sub?: string;
 }
 
 interface NewUserAuthData extends AuthData {
@@ -621,7 +668,7 @@ export default class MosquitoTransportServer {
     inspectDocDisconnectionTask(callback?: (data: DisconnectTaskInspector) => void): void;
     updateUserProfile(uid: string, profile: UserProfile): Promise<void>;
     updateUserMetadata(uid: string, metadata: GeneralObject): Promise<void>;
-    updateUserClaims(uid: string, claims: Object): Promise<void>;
+    updateUserClaims(uid: string, claims: RawObject): Promise<void>;
     updateUserEmailAddress(uid: string, email: string): Promise<void>;
     updateUserPassword(uid: string, password: string): Promise<void>;
     updateUserEmailVerify(uid: string, verified: boolean): Promise<void>;
@@ -629,3 +676,40 @@ export default class MosquitoTransportServer {
     getUserData(uid: string): Promise<UserData>;
     linkToFile(link: string): string;
 }
+
+type longitude = number;
+type latitude = number;
+
+export function GEO_JSON(latitude: latitude, longitude: longitude): {
+    type: "Point",
+    coordinates: [longitude, latitude],
+};
+
+export function FIND_GEO_JSON(coordinates: [latitude, longitude], offSetMeters: number, centerMeters?: number): {
+    $near: {
+        $geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude]
+        },
+        $minDistance: number | 0,
+        $maxDistance: number
+    }
+};
+
+export const AUTH_PROVIDER_ID: auth_provider_id;
+
+interface auth_provider_id {
+    GOOGLE: 'google.com';
+    FACEBOOK: 'facebook.com';
+    PASSWORD: 'password';
+    TWITTER: 'x.com';
+    GITHUB: 'github.com';
+    APPLE: 'apple.com';
+}
+
+type auth_provider_id_values = auth_provider_id['GOOGLE'] |
+    auth_provider_id['FACEBOOK'] |
+    auth_provider_id['PASSWORD'] |
+    auth_provider_id['GITHUB'] |
+    auth_provider_id['TWITTER'] |
+    auth_provider_id['APPLE'];
