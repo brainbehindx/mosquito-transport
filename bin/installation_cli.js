@@ -13,11 +13,7 @@ let config;
 if (args === 'install_mosquito_backup') {
     try {
         config = require(join(process.cwd(), BIN_CONFIG_FILE)).install;
-    } catch (error) {
-        config = {
-            dbName: '$'
-        };
-    }
+    } catch (error) { }
 } else if (
     commands[0] === 'install_mosquito_backup' &&
     commands.length === 2 &&

@@ -1,4 +1,5 @@
 import { isAbsolute, resolve } from 'path';
+import { createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 
 export const one_mb = 1024 * 1024,
     one_gb = one_mb * 1024;
@@ -42,10 +43,30 @@ export function isValidColName(name) {
         !name.startsWith('system.');
 }
 
-export const encryptData = (data, password) => {
+const algorithm = 'aes-256-cbc';
 
+const hashPassword = password => {
+    return [
+        createHash('sha256').update(password).digest('base64').substring(0, 32),
+        createHash('md5').update(password).digest('base64').substring(0, 16)
+    ];
+};
+
+// Encrypt function
+export function encryptData(text, password) {
+    const [key, iv] = hashPassword(password);
+    const cipher = createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
 }
 
-export const decryptData = (data, password) => {
+// Decrypt function
+export function decryptData(encryptedText, password) {
+    const [key, iv] = hashPassword(password);
 
+    const decipher = createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
 }

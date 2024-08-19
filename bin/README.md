@@ -756,10 +756,10 @@ serverApp.linkToFile("http://localhost:5622/storage/users/richard/photo.png");
 extract_mosquito_backup password=your_custom_password storage=../junk dest=./backup.bin dbName=my_admin_db/my_main_db/other_db
 ```
 
-- `dest` is the destination to write the backup to, can be a file path or an http/https line. Defaults to `mosquito_backup.bin`.
-- `dbName` should contain list of databases to extracts seperated with forward slash or "$" to extract all databases. backup is performed on "mongodb://localhost:27017".
-- `password` is use for encrypting the backup data.
-- `storage` is the directory to storage file.
+- `dest` is the destination to write the backup to, can be a file path or an http/https line. Defaults to `mosquito_backup.bin`
+- `dbName` should contain list of databases to extracts seperated with forward slash or "$" to extract all databases. backup is performed on "mongodb://localhost:27017"
+- `password` is use for encrypting the backup data
+- `storage` is the directory to storage file
 
 Executing only `extract_mosquito_backup` will use "mosquito.config.js" file in the current working directory.
 If the config file is not found, then command `extract_mosquito_backup dbName=$` will used
@@ -814,7 +814,7 @@ install_mosquito_backup password=your_custom_password storage=../junk source=./b
 
 - `password` is use for encrypting the backup data
 - `storage` is the directory to storage file
-- `source` is the path to the backup, can be a file path or http/https link. Defaults to `mosquito_backup.bin`.
+- `source` is the path to the backup, can be a file path or http/https link
 
 Executing only `install_mosquito_backup` will use "mosquito.config.js" file in the current working directory
 
@@ -831,7 +831,7 @@ an example on how the content of the file should look like is shown below:
 
 ```js
 export const install = {
-  password: "your_backup_password",
+  password: "your_custom_password",
   storage: "./path/to/your/storage",
   source: "https://api.mega.io/retrieve/backup/my_server", // can be a link or filepath
   sourceHeader: {
@@ -841,7 +841,7 @@ export const install = {
   onMongodbOption: (dbUrl) => {
     // you can also return a `MongoClient` instance
     return {
-      url: "mongodb://...your_address_here", // <--- provide this to remap dbUrl to url
+      url: 'mongodb://...your_address_here', // <--- provide this to remap dbUrl to url
       auth: {
         username: "my_mongodb_username",
         password: "my_mongodb_password",

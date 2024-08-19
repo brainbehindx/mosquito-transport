@@ -1,4 +1,4 @@
-import { Db, Document, MongoClient, SortDirection, UpdateDescription } from "mongodb";
+import { Db, Document, MongoClient, MongoClientOptions, SortDirection, UpdateDescription } from "mongodb";
 import express from "express";
 import { CorsOptions } from "cors";
 import { Sort } from "mongodb";
@@ -8,6 +8,7 @@ import type { IncomingHttpHeaders } from "http";
 import type { ParsedUrlQuery } from "querystring";
 import { Socket } from "socket.io";
 import { TokenPayload } from "google-auth-library";
+import { Transform } from "stream";
 
 interface SimpleError {
     simpleError?: {
@@ -675,6 +676,84 @@ export default class MosquitoTransportServer {
     disableUser(uid: string, disable: boolean): Promise<void>;
     getUserData(uid: string): Promise<UserData>;
     linkToFile(link: string): string;
+
+    /**
+     * extract storage and database backup of this `MosquitoTransport` instance
+     * 
+     * @example
+     * ```js
+     * import MosquitoTransportServer from "mosquito-transport";
+     * 
+     * const serverApp = new MosquitoTransportServer({
+     *     ...otherProps
+     * });
+     * 
+     * const stream = createWriteStream('./backup.bin');
+     * 
+     * serverApp.extractBackup().pipe(stream);
+     * 
+     * ```
+     * 
+     * it is recommended to extract backup from the cli while no MosquitoTransport
+     * instance is running as to avoid inconsistency in the extracted data
+     * 
+     * @returns `Transform` stream to read from
+     */
+    extractBackup(config?: BackupExtraction): Transform;
+
+    /**
+     * install backup content from a source to the respective destination
+     * 
+     * it is recommended to install backup from the cli while no MosquitoTransport
+     * instance is running as to avoid inconsistency in data installation
+     * 
+     * @returns a promise
+     */
+    installBackup(): Promise<BackupInstallationResult>;
+}
+
+interface BackupInstallationResult {
+    database: {
+        [dbUrl: string]: {
+            [dbName: string]: number;
+        }
+    },
+    totalWrittenDocuments: number;
+    totalWrittenFiles: number;
+}
+
+interface BackupExtraction {
+    /**
+     * password use for encrypting the backup data
+     */
+    password?: string | undefined;
+    /**
+     * this callback should be handled when you to pass option to the internal `MongoClient` constructor used in extracting mongodb.
+     * 
+     * you can also return your own `MongoClient` to be use in extracting mongodb
+     * 
+     * @returns `MongoClient` or `MongoClientOptions`
+     */
+    onMongodbOption?: (dbUrl: string) => MongoClientOptions | MongoClient;
+}
+
+interface BackupInstallation {
+    password?: string | undefined;
+    /**
+     * this callback should be handled when you to pass option to the internal `MongoClient` constructor used in extracting mongodb.
+     * 
+     * you can also return your own `MongoClient` to be use in extracting mongodb
+     * 
+     * @returns `MongoClient` or `MongoClientOptions`
+     */
+    onMongodbOption?: (dbUrl: string) => BackupRemapMongoOption | MongoClient;
+}
+
+interface BackupRemapMongoOption extends MongoClientOptions {
+    /**
+     * when installing a backup, this can be used to remap database location
+     */
+    url?: string | undefined;
 }
 
 type longitude = number;
