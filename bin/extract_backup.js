@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { BLOCKS_IDENTIFIERS, encryptData, isPath, isValidColName, isValidDbName, one_gb, resolvePath } from "./utils";
+import { BLOCKS_IDENTIFIERS, encryptData, isPath, isValidColName, isValidDbName, one_gb, resolvePath } from "./utils.js";
 import { readdir, stat } from "fs/promises";
 import { join } from "path";
 import { createReadStream } from "fs";
@@ -27,11 +27,11 @@ export const extractBackup = (config) => {
         throw `expected "database" to be an object but got ${database}`;
     } else if (database) {
 
-        for (const [dbUrl, dbNameObj] in Object.entries(database)) {
+        for (const [dbUrl, dbNameObj] of Object.entries(database)) {
             if (!dbUrl.startsWith('mongodb://'))
                 throw `invalid dbUrl format: ${dbUrl}`;
 
-            for (const [dbName, col] in dbNameObj) {
+            for (const [dbName, col] of Object.entries(dbNameObj)) {
                 if (!isValidDbName(dbName))
                     throw `invalid dbName: "${dbName}"`;
 
@@ -62,7 +62,7 @@ export const extractBackup = (config) => {
              * data bit-by-bit and write it to the stream
              */
             if (database) {
-                for (const [dbUrl, dbNameObj] in Object.entries(database)) {
+                for (const [dbUrl, dbNameObj] of Object.entries(database)) {
                     const mongoHandle = onMongodbOption?.(dbUrl);
                     const isInstance = mongoHandle instanceof MongoClient;
 
@@ -72,7 +72,7 @@ export const extractBackup = (config) => {
                     pushBuffer(Buffer.from(BLOCKS_IDENTIFIERS.DB_URL, 'utf8'));
                     pushBuffer(Buffer.from(`${dbUrl}`, 'utf8'));
 
-                    for (let [dbName, collections] in Object.entries(dbNameObj)) {
+                    for (let [dbName, collections] of Object.entries(dbNameObj)) {
                         const dbNameInstance = dbInstance.db(dbName);
 
                         pushBuffer(Buffer.from(BLOCKS_IDENTIFIERS.DB_NAME, 'utf8'));
@@ -82,7 +82,7 @@ export const extractBackup = (config) => {
                             collections = (await dbNameInstance.listCollections().toArray()).map(v => v.name);
                         }
 
-                        for (const thisCol in collections) {
+                        for (const thisCol of collections) {
                             let canLoadMore = true, offset = 0;
 
                             pushBuffer(Buffer.from(BLOCKS_IDENTIFIERS.COLLECTION, 'utf8'));
@@ -90,8 +90,8 @@ export const extractBackup = (config) => {
 
                             while (canLoadMore) {
                                 const data = await dbNameInstance.collection(thisCol).find({})
-                                    .skip(offset += DOC_LIMITER).limit(DOC_LIMITER).toArray();
-
+                                    .skip(offset).limit(DOC_LIMITER).toArray();
+                                offset += DOC_LIMITER;
                                 canLoadMore = data.length === DOC_LIMITER;
                                 data.forEach(v => {
                                     pushBuffer(Buffer.from(BLOCKS_IDENTIFIERS.DOCUMENT, 'utf8'));
@@ -151,7 +151,7 @@ export const extractBackup = (config) => {
                     } else {
                         const files = await readdir(dir);
                         if (files.length) {
-                            for (const file in files) {
+                            for (const file of files) {
                                 await crawlStorage(join(dir, file));
                             }
                         } else if (storagePath) {

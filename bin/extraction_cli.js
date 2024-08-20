@@ -1,17 +1,19 @@
+#!/usr/bin/env node
+
 import { join, resolve } from 'path';
-import { BIN_CONFIG_FILE, isPath, one_gb, RESERVED_DB, resolvePath } from './utils';
-import { extractBackup } from './extract_backup';
+import { BIN_CONFIG_FILE, isHttp_s, isPath, one_gb, RESERVED_DB, resolvePath } from './utils.js';
+import { extractBackup } from './extract_backup.js';
 import { guardArray, guardObject, GuardSignal, niceGuard, Validator } from 'guard-object';
 import { MongoClient } from 'mongodb';
 import { createWriteStream } from 'fs';
 import fetch from 'node-fetch';
 
-const args = process.argv.join(' ');
-const commands = args.split(' ').filter(v => v);
+const commands = process.argv.slice(2).map(v => v.trim()).filter(v => v);
 
+console.log('args:', commands);
 let config;
 
-if (args === 'extract_mosquito_backup') {
+if (!commands.length) {
     try {
         config = require(join(process.cwd(), BIN_CONFIG_FILE)).extract;
     } catch (error) {
@@ -20,11 +22,10 @@ if (args === 'extract_mosquito_backup') {
         };
     }
 } else if (
-    commands[0] === 'extract_mosquito_backup' &&
-    commands.length === 2 &&
-    isPath(commands[1])
+    commands.length === 1 &&
+    isPath(commands[0])
 ) {
-    config = require(resolvePath(commands[1])).extract;
+    config = require(resolvePath(commands[0])).extract;
 } else {
     const fields = ['password', 'storage', 'dest', 'dbName'];
 
@@ -32,10 +33,10 @@ if (args === 'extract_mosquito_backup') {
         commands.map(v => {
             const key = fields.find(n => v.startsWith(`${n}=`));
             if (key) return [key, v.substring(key.length + 1)];
+            return [v];
         }).filter(v => v)
     );
 }
-
 
 const {
     password,
@@ -63,7 +64,7 @@ if (dest === undefined) {
     Validator.HTTP(dest)
 ) {
     destination = isPath(dest) ? resolvePath(dest) : dest;
-    if (dest.startsWith('http')) {
+    if (isHttp_s(dest)) {
         if (
             destHeaders !== undefined &&
             (!Validator.OBJECT(destHeaders) ||
@@ -112,6 +113,7 @@ const stream = extractBackup(newConfig);
 
 stream.on('end', () => {
     console.log(`backup successfully written to ${destination} ✅`);
+    process.exit(0);
 });
 
 stream.on('error', err => {
@@ -119,7 +121,7 @@ stream.on('error', err => {
     process.exit(1);
 });
 
-if (destination.startsWith('http')) {
+if (isHttp_s(destination)) {
     const remoteStream = await fetch(destination, {
         headers: { ...destHeaders },
         body: stream

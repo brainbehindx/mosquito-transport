@@ -21,6 +21,7 @@ export const RESERVED_DB = ['admin', 'local', 'config'];
 export const isRelative = p => typeof p === 'string' && (p.startsWith('./') || p.startsWith('../'));
 export const isPath = (p) => typeof p === 'string' && (isAbsolute(p) || isRelative(p));
 export const resolvePath = p => isRelative(p) ? resolve(process.cwd(), p) : p;
+export const isHttp_s = t => typeof t === 'string' && (t.startsWith('http://') || t.startsWith('https://'));
 
 export function isValidDbName(name) {
     const maxLength = 64;
@@ -53,20 +54,22 @@ const hashPassword = password => {
 };
 
 // Encrypt function
-export function encryptData(text, password) {
+export function encryptData(data, password) {
     const [key, iv] = hashPassword(password);
     const cipher = createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return encrypted;
+    return Buffer.concat([
+        cipher.update(data),
+        cipher.final()
+    ]);
 }
 
 // Decrypt function
-export function decryptData(encryptedText, password) {
+export function decryptData(data, password) {
     const [key, iv] = hashPassword(password);
 
     const decipher = createDecipheriv(algorithm, key, iv);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    return Buffer.concat([
+        decipher.update(data),
+        decipher.final()
+    ]);
 }

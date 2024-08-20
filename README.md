@@ -20,6 +20,8 @@ Under the hood, mosquito-transport uses Mongodb to store it data, along with [ex
   - Benefit from auto-scaling and high performance, allowing your application to handle varying workloads with ease.
 - Cross-Platform Compatibility 📱:
   - Compatible with React Native and web applications, allowing you to build cross-platform solutions with ease.
+- Easy Data Backup and Restore 💿:
+  - Effortlessly secure your data with seamless backup and restore functionality, ensuring quick and reliable recovery whenever needed
 
 ## Installation
 
@@ -179,6 +181,12 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [inspectDocDisconnectionTask](#inspectDocDisconnectionTask)
   - [linkToFile](#linkToFile)
   - [extractBackup](#extractBackup)
+- [Extracting Backup](#Extracting-Backup)
+  - [CLI backup extraction](#CLI-backup-extraction)
+  - [Advance backup extraction](#Advance-backup-extraction)
+- [Installing Backup](#Installing-Backup)
+  - [CLI backup installation](#CLI-backup-installation)
+  - [Advance backup installation](#Advance-backup-installation)
 - [Authentication Setup](#authentication-setup)
   - [Merge Auth Account](#google-auth-setup)
   - [Google Auth Setup](#google-auth-setup)
@@ -540,7 +548,7 @@ the maximum size in bytes of each request payload. Default to 100MB
 
 the maximum size in byte of each uploading request payload. Default to 10GB
 
-## MosquitoTransportServer-Getters
+## MosquitoTransportServer Getters
 
 ### storagePath
 
@@ -554,7 +562,7 @@ quickly get an end-to-end encryption [pair key](#[e2eKeyPair]) for your server
 
 get the internal express instance use
 
-## MosquitoTransportServer-Methods
+## MosquitoTransportServer Methods
 
 ### getDatabase
 

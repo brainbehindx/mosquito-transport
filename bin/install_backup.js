@@ -1,4 +1,4 @@
-import { BLOCKS_IDENTIFIERS, decryptData, one_gb } from "./utils";
+import { BLOCKS_IDENTIFIERS, decryptData, one_gb } from "./utils.js";
 import { MongoClient } from "mongodb";
 import { mkdir } from "fs/promises";
 import { join } from "path";
@@ -7,9 +7,12 @@ import { ReadableBit } from "@deflexable/bit-stream";
 
 const FILE_WATERMARK = one_gb * .3;
 
-export const installBackup = (config, onInstallationStats) => {
-    const { password, storage, onMongodbOption } = { ...config };
-    const stream = new ReadableBit();
+export const installBackup = (config) => new Promise((callResolve, callReject) => {
+    /**
+     * @type {{stream: import('stream').Readable}}
+     */
+    const { password, storage, stream, onMongodbOption } = { ...config };
+    const streamingBit = new ReadableBit();
     let steadyPromise;
 
     const INIT_BLOCKS = {
@@ -44,7 +47,7 @@ export const installBackup = (config, onInstallationStats) => {
     const handleChunk = async (chunk) => {
         try {
             const thisElem = password ? decryptData(chunk, password) : chunk;
-            const thisHeader = !(bitIndex++ % 2) && Buffer.from(thisElem).toString('utf8');
+            const thisHeader = !(bitIndex++ % 2) && thisElem.toString('utf8');
 
             if (thisHeader) {
                 lastBlocks.headers = thisHeader;
@@ -55,13 +58,13 @@ export const installBackup = (config, onInstallationStats) => {
                 const prevHeader = lastBlocks.headers;
 
                 if (prevHeader === BLOCKS_IDENTIFIERS.DB_URL) {
-                    lastBlocks.database = { dbUrl: Buffer.from(thisElem).toString('utf8') };
+                    lastBlocks.database = { dbUrl: thisElem.toString('utf8') };
                     if (lastBlocks.storage.path)
                         throw `(${BLOCKS_IDENTIFIERS.DB_URL}) block should come first before (${BLOCKS_IDENTIFIERS.STORAGE_FILE_PATH})`;
                 } else if (prevHeader === BLOCKS_IDENTIFIERS.DB_NAME) {
-                    lastBlocks.database.dbName = Buffer.from(thisElem).toString('utf8');
+                    lastBlocks.database.dbName = thisElem.toString('utf8');
                 } else if (prevHeader === BLOCKS_IDENTIFIERS.COLLECTION) {
-                    lastBlocks.database.collection = Buffer.from(thisElem).toString('utf8');
+                    lastBlocks.database.collection = thisElem.toString('utf8');
                 } else if (prevHeader === BLOCKS_IDENTIFIERS.DOCUMENT) {
                     const { collection, dbName, dbUrl } = lastBlocks.database;
                     if (typeof dbUrl !== 'string' || !dbUrl.trim())
@@ -87,8 +90,7 @@ export const installBackup = (config, onInstallationStats) => {
                         ++installionStats.database[thisUrl][dbName];
                     } else installionStats.database[thisUrl][dbName] = 1;
 
-                    const { _id, ...docRest } = JSON.parse(Buffer.from(thisElem).toString('base64'));
-
+                    const { _id, ...docRest } = JSON.parse(thisElem.toString('utf8'));
                     if (!_id) throw `invalid doc found in block_id ${BLOCK_ID}`;
                     await mongodbInstances[dbUrl].db(dbName).collection(collection).replaceOne(
                         { _id },
@@ -100,7 +102,7 @@ export const installBackup = (config, onInstallationStats) => {
                     lastBlocks.database = INIT_BLOCKS.database;
 
                     if (prevHeader === BLOCKS_IDENTIFIERS.STORAGE_DIRECTORY) {
-                        const path = Buffer.from(thisElem).toString('utf8');
+                        const path = thisElem.toString('utf8');
                         lastBlocks.storage = INIT_BLOCKS.storage;
                         try {
                             await mkdir(join(storage, path), {
@@ -109,7 +111,7 @@ export const installBackup = (config, onInstallationStats) => {
                             });
                         } catch (_) { }
                     } else if (prevHeader === BLOCKS_IDENTIFIERS.STORAGE_FILE_PATH) {
-                        const path = join(storage, Buffer.from(thisElem).toString('utf8'));
+                        const path = join(storage, thisElem.toString('utf8'));
                         if (lastBlocks.storage.file) {
                             lastBlocks.storage.file.end();
                         }
@@ -133,40 +135,54 @@ export const installBackup = (config, onInstallationStats) => {
                 lastBlocks.headers = undefined;
             }
         } catch (error) {
-            stream.destroy(new Error(`${error}`));
+            streamingBit.destroy(new Error(`${error}`));
             throw error;
         }
     }
 
-    stream.on('data', chunk => {
+    let lastBitID = 0,
+        hasEnded,
+        lastResolvedBitID;
+
+    const resolveInstall = () => {
+        callResolve(installionStats);
+        if (lastBlocks.storage.file) {
+            lastBlocks.storage.file.end();
+            lastBlocks.storage.file = undefined;
+        }
+    }
+
+    streamingBit.on('data', chunk => {
         const thisPromise = steadyPromise;
-        const ended = stream.writableFinished;
+        const bitID = ++lastBitID;
 
         steadyPromise = new Promise(async (resolve, reject) => {
             try {
                 await thisPromise;
                 await handleChunk(chunk);
                 resolve();
-                if (ended && lastBlocks.storage.file) {
-                    lastBlocks.storage.file.end();
-                    lastBlocks.storage.file = undefined;
-                }
+                if (hasEnded && lastBitID === bitID)
+                    resolveInstall();
+                lastResolvedBitID = bitID;
             } catch (error) {
                 reject(error);
             }
         });
     });
 
-    stream.on('end', () => {
-        onInstallationStats?.(installionStats);
+    streamingBit.on('end', () => {
+        if (lastResolvedBitID === lastBitID) {
+            resolveInstall();
+        } else hasEnded = true;
     });
 
-    stream.on('error', () => {
+    streamingBit.on('error', err => {
+        callReject(err);
         if (lastBlocks.storage.file) {
             lastBlocks.storage.file.end();
             lastBlocks.storage.file = undefined;
         }
     });
 
-    return stream;
-}
+    stream.pipe(streamingBit);
+});
