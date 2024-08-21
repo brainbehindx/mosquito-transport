@@ -1,4 +1,4 @@
-import { isAbsolute, resolve } from 'path';
+import { isAbsolute, join, resolve } from 'path';
 import { createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 
 export const one_mb = 1024 * 1024,
@@ -20,7 +20,15 @@ export const RESERVED_DB = ['admin', 'local', 'config'];
 
 export const isRelative = p => typeof p === 'string' && (p.startsWith('./') || p.startsWith('../'));
 export const isPath = (p) => typeof p === 'string' && (isAbsolute(p) || isRelative(p));
-export const resolvePath = p => isRelative(p) ? resolve(process.cwd(), p) : p;
+const tipPath = p => ['/', '../', './'].find(v => p.startsWith(v));
+
+export const resolvePath = (...p) => {
+    const paths = [...p];
+
+    return isRelative(paths[0])
+        ? resolve(process.cwd(), `${tipPath(paths[0])}${join(...paths)}`)
+        : join(...paths);
+}
 export const isHttp_s = t => typeof t === 'string' && (t.startsWith('http://') || t.startsWith('https://'));
 
 export function isValidDbName(name) {

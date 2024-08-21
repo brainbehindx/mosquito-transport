@@ -9,13 +9,12 @@ import { createWriteStream } from 'fs';
 import fetch from 'node-fetch';
 
 const commands = process.argv.slice(2).map(v => v.trim()).filter(v => v);
-
-console.log('args:', commands);
 let config;
+const startTime = Date.now();
 
 if (!commands.length) {
     try {
-        config = require(join(process.cwd(), BIN_CONFIG_FILE)).extract;
+        config = (await import(`${join(process.cwd(), BIN_CONFIG_FILE)}`)).extract;
     } catch (error) {
         config = {
             dbName: '$'
@@ -25,7 +24,7 @@ if (!commands.length) {
     commands.length === 1 &&
     isPath(commands[0])
 ) {
-    config = require(resolvePath(commands[0])).extract;
+    config = (await import(`${resolvePath(commands[0])}`)).extract;
 } else {
     const fields = ['password', 'storage', 'dest', 'dbName'];
 
@@ -37,6 +36,8 @@ if (!commands.length) {
         }).filter(v => v)
     );
 }
+
+if (!config) throw 'you need to export "extract" in your backup config file';
 
 const {
     password,
@@ -112,7 +113,8 @@ if (unknownFields.length)
 const stream = extractBackup(newConfig);
 
 stream.on('end', () => {
-    console.log(`backup successfully written to ${destination} ✅`);
+    console.log(`backup written to ${destination}`);
+    console.log(`process took ${Date.now() - startTime}ms`);
     process.exit(0);
 });
 

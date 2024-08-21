@@ -1,27 +1,26 @@
 #!/usr/bin/env node
 
 import { join, resolve } from 'path';
-import { BIN_CONFIG_FILE, isHttp_s, isPath, one_gb, resolvePath } from './utils.js';
+import { BIN_CONFIG_FILE, isHttp_s, isPath, resolvePath } from './utils.js';
 import { guardArray, GuardSignal, niceGuard, Validator } from 'guard-object';
 import { createReadStream } from 'fs';
 import fetch from 'node-fetch';
 import { installBackup } from './install_backup.js';
 
 const commands = process.argv.slice(2).map(v => v.trim()).filter(v => v);
-
-console.log('args:', commands);
+const startTime = Date.now();
 
 let config;
 
 if (!commands.length) {
     try {
-        config = require(join(process.cwd(), BIN_CONFIG_FILE)).install;
+        config = (await import(`${join(process.cwd(), BIN_CONFIG_FILE)}`)).install;
     } catch (error) { }
 } else if (
     commands.length === 1 &&
     isPath(commands[0])
 ) {
-    config = require(resolvePath(commands[0])).install;
+    config = (await import(`${resolvePath(commands[0])}`)).install;
 } else {
     const fields = ['password', 'storage', 'source'];
 
@@ -33,6 +32,8 @@ if (!commands.length) {
         }).filter(v => v)
     );
 }
+
+if (!config) throw 'you need to export "install" in your backup config file';
 
 const {
     password,
@@ -82,13 +83,13 @@ try {
         sourceStream = remoteStream.body;
         console.log('backup server status:', remoteStream.statusText || remoteStream.status);
     } else {
-        sourceStream = createReadStream(sourcePath, { highWaterMark: one_gb });
+        sourceStream = createReadStream(sourcePath);
     }
     newConfig.stream = sourceStream;
 
     const stats = await installBackup(newConfig);
     console.log('installation stats:\n', stats);
-    console.log('installation completed ✅');
+    console.log(`process took ${Date.now() - startTime}ms`);
     process.exit(0);
 } catch (error) {
     console.error(error);

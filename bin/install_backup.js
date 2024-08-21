@@ -1,11 +1,9 @@
-import { BLOCKS_IDENTIFIERS, decryptData, one_gb } from "./utils.js";
+import { BLOCKS_IDENTIFIERS, decryptData, resolvePath } from "./utils.js";
 import { MongoClient } from "mongodb";
 import { mkdir } from "fs/promises";
-import { join } from "path";
 import { createWriteStream } from "fs";
 import { ReadableBit } from "@deflexable/bit-stream";
-
-const FILE_WATERMARK = one_gb * .3;
+import { dirname } from "path";
 
 export const installBackup = (config) => new Promise((callResolve, callReject) => {
     /**
@@ -105,13 +103,13 @@ export const installBackup = (config) => new Promise((callResolve, callReject) =
                         const path = thisElem.toString('utf8');
                         lastBlocks.storage = INIT_BLOCKS.storage;
                         try {
-                            await mkdir(join(storage, path), {
+                            await mkdir(resolvePath(storage, path), {
                                 force: true,
                                 recursive: true
                             });
                         } catch (_) { }
                     } else if (prevHeader === BLOCKS_IDENTIFIERS.STORAGE_FILE_PATH) {
-                        const path = join(storage, thisElem.toString('utf8'));
+                        const path = resolvePath(storage, thisElem.toString('utf8'));
                         if (lastBlocks.storage.file) {
                             lastBlocks.storage.file.end();
                         }
@@ -123,9 +121,13 @@ export const installBackup = (config) => new Promise((callResolve, callReject) =
                         if (lastBlocks.storage.file) {
                             lastBlocks.storage.file.write(thisElem);
                         } else {
-                            const writeStream = createWriteStream(lastBlocks.storage.path, {
-                                highWaterMark: FILE_WATERMARK
-                            });
+                            try {
+                                await mkdir(dirname(lastBlocks.storage.path), {
+                                    force: true,
+                                    recursive: true
+                                });
+                            } catch (_) { }
+                            const writeStream = createWriteStream(lastBlocks.storage.path);
                             writeStream.write(thisElem);
                             lastBlocks.storage.file = writeStream;
                             ++installionStats.totalWrittenFiles;
@@ -135,7 +137,7 @@ export const installBackup = (config) => new Promise((callResolve, callReject) =
                 lastBlocks.headers = undefined;
             }
         } catch (error) {
-            streamingBit.destroy(new Error(`${error}`));
+            streamingBit.destroy(error);
             throw error;
         }
     }

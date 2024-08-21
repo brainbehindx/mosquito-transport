@@ -761,7 +761,7 @@ serverApp.linkToFile("http://localhost:5622/storage/users/richard/photo.png");
 ### CLI backup extraction
 
 ```sh
-extract_mosquito_backup password=your_custom_password storage=../junk dest=./backup.bin dbName=my_admin_db/my_main_db/other_db
+npx extract_mosquito_backup password=your_custom_password storage=../junk dest=./backup.bin dbName=my_admin_db/my_main_db/other_db
 ```
 
 - `dest` is the destination to write the backup to, can be a file path or an http/https line. Defaults to `mosquito_backup.bin`.
@@ -769,15 +769,15 @@ extract_mosquito_backup password=your_custom_password storage=../junk dest=./bac
 - `password` is use for encrypting the backup data.
 - `storage` is the directory to storage file.
 
-Executing only `extract_mosquito_backup` will use "mosquito.config.js" file in the current working directory.
-If the config file is not found, then command `extract_mosquito_backup dbName=$` will used
+Executing only `npx extract_mosquito_backup` will use "mosquito.config.js" file in the current working directory.
+If the config file is not found, then command `npx extract_mosquito_backup dbName=$` will executed instead.
 
 ### Advance backup extraction
 
 You can provide a custom configuration file for extracting backup like:
 
 ```sh
-extract_mosquito_backup ./path/to/custom_backup_config.js
+npx extract_mosquito_backup ./path/to/custom_backup_config.js
 ```
 
 You are expected to export `extract` in your config file.
@@ -817,21 +817,21 @@ export const extract = {
 ### CLI backup installation
 
 ```sh
-install_mosquito_backup password=your_custom_password storage=../junk source=./backup.bin
+npx install_mosquito_backup password=your_custom_password storage=../junk source=./backup.bin
 ```
 
 - `password` is use for encrypting the backup data
 - `storage` is the directory to storage file
 - `source` is the path to the backup, can be a file path or http/https link. Defaults to `mosquito_backup.bin`.
 
-Executing only `install_mosquito_backup` will use "mosquito.config.js" file in the current working directory
+Executing only `npx install_mosquito_backup` will use "mosquito.config.js" file in the current working directory
 
 ### Advance backup installation
 
 You can provide a custom configuration file for extracting backup like:
 
 ```sh
-install_mosquito_backup ./path/to/custom_backup_config.js
+npx install_mosquito_backup ./path/to/custom_backup_config.js
 ```
 
 You are expected to export `install` in your config file.
