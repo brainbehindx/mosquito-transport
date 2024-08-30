@@ -1,6 +1,6 @@
 {
   "name": "mosquito-transport",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "MosquitoTransport is a powerful tool that helps persist and synchronize data between your MongoDB database and frontend applications",
   "main": "lib/index.js",
   "type": "module",
