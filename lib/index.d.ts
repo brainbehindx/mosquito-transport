@@ -29,8 +29,10 @@ interface StorageRulesSnapshot {
 
 }
 
+type WriteScope = 'setOne' | 'setMany' | 'updateOne' | 'updateMany' | 'mergeOne' | 'mergeMany' | 'deleteOne' | 'deleteMany' | 'replaceOne' | 'putOne';
+
 interface BatchUpdateValue {
-    scope: 'setOne' | 'setMany' | 'updateOne' | 'mergeOne' | 'deleteOne' | 'deleteMany' | 'replaceOne' | 'putOne';
+    scope: WriteScope;
     find?: DatabaseRulesIOPrescription['find'];
     value?: DatabaseRulesIOPrescription['value'];
     path: string;
@@ -44,10 +46,30 @@ interface DatabaseRulesIOPrescription {
     random?: boolean;
     find?: Filter<undefined> | {} | undefined;
     value?: UpdateFilter<undefined> | undefined;
+    config?: PrescriptionConfig | undefined;
+    scope?: WriteScope;
+}
+
+interface PrescribedExtraction {
+    collection: string;
+    sort?: Sort;
+    direction?: SortDirection;
+    limit?: number;
+    find?: Filter<undefined> | {} | undefined;
+    findOne?: Filter<undefined> | {} | undefined;
+    returnOnly?: string | string[] | undefined;
+    excludeFields?: string | string[] | undefined;
+}
+
+interface PrescriptionConfig {
+    extraction?: PrescribedExtraction | PrescribedExtraction[] | undefined;
+    returnOnly?: string | string[] | undefined;
+    excludeFields?: string | string[] | undefined;
 }
 
 interface DatabaseRulesBatchWritePrescription {
     value: BatchUpdateValue[];
+    stepping?: boolean;
 }
 
 interface DatabaseRulesSnapshot {
