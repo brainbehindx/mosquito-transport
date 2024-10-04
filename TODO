@@ -2,6 +2,7 @@
 - add method for login user account
 - add two factor auth functionality to jwt token
 - uniquify db json event
-- document extraction
+- document extraction ✅
 - blobify backup
 - hash uploaded files to reduce storage
+- add database path as get static
