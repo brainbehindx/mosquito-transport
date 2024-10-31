@@ -8,7 +8,7 @@ import type { IncomingHttpHeaders } from "http";
 import type { ParsedUrlQuery } from "querystring";
 import { Socket } from "socket.io";
 import { TokenPayload } from "google-auth-library";
-import { Transform } from "stream";
+import { Transform, PassThrough } from "stream";
 
 interface SimpleError {
     simpleError?: {
@@ -73,6 +73,7 @@ interface DatabaseRulesBatchWritePrescription {
 }
 
 interface DatabaseRulesSnapshot {
+    headers: IncomingHttpHeaders;
     auth?: JWTAuthData | undefined;
     endpoint: '_readDocument' | '_queryCollection' | '_writeDocument' | '_writeMapDocument' | '_documentCount' | '_listenCollection' | '_listenDocument' | '_startDisconnectWriteTask' | '_cancelDisconnectWriteTask';
     prescription?: DatabaseRulesIOPrescription | DatabaseRulesBatchWritePrescription;
@@ -80,7 +81,7 @@ interface DatabaseRulesSnapshot {
     dbRef?: string;
 }
 
-type LogLevel = 'all' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot';
+type LogLevel = 'all' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot' | 'error';
 
 interface GoogleAuthConfig {
     clientID?: string;
@@ -278,7 +279,7 @@ interface MSocketError {
 }
 
 interface TransformMediaOption {
-    localBuffer: Buffer;
+    uri: string;
     request?: express.Request;
 }
 
@@ -306,6 +307,43 @@ interface UserMountedEvent {
      * The headers sent as part of the handshake
      */
     headers: IncomingHttpHeaders;
+}
+
+interface DDOS_Limiter {
+    calls: number;
+    perSeconds: number;
+}
+
+interface AuthDDOS extends DDOS_Limiter {
+    signup?: DDOS_Limiter;
+    signin?: DDOS_Limiter;
+    signout?: DDOS_Limiter;
+    refresh_token?: DDOS_Limiter;
+    google_signin?: DDOS_Limiter;
+}
+
+interface DatabaseDDOS extends DDOS_Limiter {
+    read?: DDOS_Limiter;
+    query?: DDOS_Limiter;
+    write?: DDOS_Limiter;
+}
+
+interface StorageDDOS extends DDOS_Limiter {
+    get?: DDOS_Limiter;
+    upload?: DDOS_Limiter;
+    delete?: DDOS_Limiter;
+    delete_folder?: DDOS_Limiter;
+}
+
+interface ApiDDOS extends DDOS_Limiter {
+    [key in string]: DDOS_Limiter;
+}
+
+interface DDOS_Map {
+    auth?: AuthDDOS;
+    database?: DatabaseDDOS;
+    storage?: StorageDDOS;
+    requests?: ApiDDOS;
 }
 
 interface MosquitoServerConfig {
@@ -345,8 +383,43 @@ interface MosquitoServerConfig {
      * - `external-requests`: log api requests
      * - `served-content`: log storage GET requests
      * - `database-snapshot`: log database snapshot events
+     * - `error`: log all internal errors
+     * 
+     * @default `error`
      */
     logger?: LogLevel | LogLevel[];
+    /**
+     * true to deserialize BSON values emited at {@link MosquitoServerConfig.databaseRules} to their Node.js closest equivalent types
+     * 
+     * @default true
+     */
+    castBSON: boolean;
+    /**
+     * this prevent ddos attack on this server instance by rate limiting request made to specific endpoint base on client ip address.
+     * 
+     * the default value prevent ddos attack to auth endpoint as follows:
+     * 
+     * ```json
+     * {
+     *   "auth": {
+     *     "signup": { "calls": 7, "perSeconds": 1800 },
+     *     "signin": { "calls": 10, "perSeconds": 600 },
+     *     "google_signin": { "calls": 7, "perSeconds": 300 }
+     *   }
+     * }
+     * ```
+     */
+    ddosMap: DDOS_Map;
+    /**
+     * disable remote client access to internal functionalities
+     * 
+     * by default all internal functionalities are enabled for remote client
+     */
+    internals?: {
+        auth: boolean;
+        database: boolean;
+        storage: boolean;
+    };
     /**
      * this should be a valid http or https link. it is used internally while signing jwt and for prefixing storage `downloadUrl` when uploading a file by frontend client
      */
@@ -565,18 +638,31 @@ interface JWTAuthData extends AuthData {
 }
 
 interface NewUserAuthData extends AuthData {
-    password?: string;
-    google_sub?: string;
-    apple_sub?: string;
-    twitter_sub?: string;
-    github_sub?: string;
-    facebook_sub?: string;
+   'google.com': string;
+   'facebook.com': string;
+   'x.com': string;
+   'github.com': string;
+   'apple.com': string;
 }
 
-interface MosquitoDbHttpOptions {
+interface MosquitoHttpOptions {
+    /**
+     * reject request that doesn't have a token or have invalid tokens
+     */
     enforceUser?: boolean;
+    /**
+     * admits all request that doesn't have a token or have a token that is valid
+     */
     validateUser?: boolean;
+    /**
+     * reject request if the sent token does not have a verified email address
+     */
     enforceVerifiedUser?: boolean;
+    /**
+     * disable all internal adds-on such as token validation, end-to-end encryption
+     * 
+     * this is basically identical to calling `MtInstance.express.use((req, res, next)=> { })`
+     */
     rawEntry?: boolean;
 }
 
@@ -613,9 +699,8 @@ interface DisconnectTaskInspector extends SimpleError {
 }
 
 interface StorageSnapshot {
-    systemDest: string;
+    uri: string;
     dest: string;
-    buffer?: Buffer;
     operation: 'uploadFile' | 'deleteFile' | 'deleteFolder';
     auth?: JWTAuthData;
 }
@@ -680,13 +765,55 @@ export default class MosquitoTransportServer {
     /**
      * listen to incoming request
      */
-    listenHttpsRequest(route: string, callback?: (request: RawBodyRequest, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoDbHttpOptions): void;
+    listenHttpsRequest(route: string, callback?: (request: RawBodyRequest, response: express.Response, auth?: JWTAuthData | null) => void, options?: MosquitoHttpOptions): void;
+    /**
+     * listen to insert, update and delete events from mongodb
+     */
     listenDatabase(collection: string, callback?: (data: DatabaseListenerCallbackData) => void, options?: DatabaseListenerOption): void;
+    /**
+     * listen to storage event. these event are typically made by the frontend client.
+     */
     listenStorage(callback?: (snapshot: StorageSnapshot) => void): () => void;
-    uploadBuffer(destination: string, buffer: Buffer): Promise<string>;
+    /**
+     * get the local source where a file is stored on the disk
+     * @param path the location of the file
+     */
+    getStorageSource(path: string): { source: string, hashValue?: string } | null;
+    /**
+     * stream a file to the storage directory and optionally create hash for it to reduce duplicate file storage
+     * 
+     * @param destination the location to store the file to
+     * @param createHash optionally create hash for this write to save disk space
+     * @param callback function that is called when the stream encounter an error or succeed
+     */
+    streamBuffer(destination: string, createHash: undefined | boolean, callback: (err: Error, url: string) => void): PassThrough;
+    /**
+     * upload a file to the storage directory and optionally create hash for it to reduce duplicate file storage
+     * 
+     * @param destination the location to store the file to
+     * @param buffer the file's buffer content
+     * @param createHash optionally create hash for this write to save disk space
+     */
+    uploadBuffer(destination: string, buffer: Buffer, createHash?: boolean): Promise<string>;
+    /**
+     * delete file in the storage directory
+     * @param path the location to the file
+     */
     deleteFile(path: string): Promise<void>;
+    /**
+     * delete folder in the storage directory
+     * @param path the location to the file
+     */
     deleteFolder(path: string): Promise<void>;
+    /**
+     * listen to new user
+     * @param callback event called when a new user creates an account on this Server Instance
+     */
     listenNewUser(callback?: (user: NewUserAuthData) => void): void;
+    /**
+     * listen to deletedUser
+     * @param callback event called when a user account was deleted on this Server Instance
+     */
     listenDeletedUser(callback?: (uid: string) => void): void;
     inspectDocDisconnectionTask(callback?: (data: DisconnectTaskInspector) => void): void;
     updateUserProfile(uid: string, profile: UserProfile): Promise<void>;
@@ -787,7 +914,7 @@ export function GEO_JSON(latitude: latitude, longitude: longitude): {
 };
 
 export function FIND_GEO_JSON(coordinates: [latitude, longitude], offSetMeters: number, centerMeters?: number): {
-    $near: {
+    $nearSphere: {
         $geometry: {
             type: "Point",
             coordinates: [longitude, latitude]

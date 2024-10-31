@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, serialize } from "mongodb";
 import { BLOCKS_IDENTIFIERS, encryptData, isPath, isValidColName, isValidDbName, one_gb, resolvePath } from "./utils.js";
 import { readdir, stat } from "fs/promises";
 import { createReadStream } from "fs";
@@ -93,9 +93,9 @@ export const extractBackup = (config) => {
                                     .skip(offset).limit(DOC_LIMITER).toArray();
                                 offset += DOC_LIMITER;
                                 canLoadMore = data.length === DOC_LIMITER;
-                                data.forEach(v => {
+                                data.forEach(doc => {
                                     pushBuffer(Buffer.from(BLOCKS_IDENTIFIERS.DOCUMENT, 'utf8'));
-                                    pushBuffer(Buffer.from(JSON.stringify(v), 'utf8'))
+                                    pushBuffer(Buffer.from(serialize(doc)))
                                 });
                             }
                         }

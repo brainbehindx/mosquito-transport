@@ -1,5 +1,5 @@
 import { BLOCKS_IDENTIFIERS, decryptData, resolvePath } from "./utils.js";
-import { MongoClient } from "mongodb";
+import { deserialize, MongoClient } from "mongodb";
 import { mkdir } from "fs/promises";
 import { createWriteStream } from "fs";
 import { ReadableBit } from "@deflexable/bit-stream";
@@ -88,7 +88,11 @@ export const installBackup = (config) => new Promise((callResolve, callReject) =
                         ++installionStats.database[thisUrl][dbName];
                     } else installionStats.database[thisUrl][dbName] = 1;
 
-                    const { _id, ...docRest } = JSON.parse(thisElem.toString('utf8'));
+                    const { _id, ...docRest } = deserialize(thisElem, {
+                        bsonRegExp: true,
+                        promoteLongs: false,
+                        promoteValues: false
+                    });
                     if (!_id) throw `invalid doc found in block_id ${BLOCK_ID}`;
                     await mongodbInstances[dbUrl].db(dbName).collection(collection).replaceOne(
                         { _id },

@@ -4,5 +4,5 @@
 - uniquify db json event
 - document extraction ✅
 - blobify backup
-- hash uploaded files to reduce storage
+- hash uploaded files to reduce storage ✅
 - add database path as get static

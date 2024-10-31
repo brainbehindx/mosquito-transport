@@ -136,6 +136,9 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [enforceE2E](#enforceE2E)
   - [e2eKeyPair](#e2eKeyPair)
   - [logger](#logger)
+  - [castBSON](#castBSON)
+  - [ddosMap](#ddosMap)
+  - [internals](#internals)
   - [dumpsterPath](#dumpsterPath)
   - [preMiddlewares](#preMiddlewares)
   - [transformMediaRoute](#transformMediaRoute)
@@ -175,6 +178,8 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [updateUserEmailVerify](#updateUserEmailVerify)
   - [signOutUser](#signOutUser)
   - [disableUser](#disableUser)
+  - [getStorageSource](#getStorageSource)
+  - [streamBuffer](#streamBuffer)
   - [uploadBuffer](#uploadBuffer)
   - [deleteFile](#deleteFile)
   - [deleteFolder](#deleteFolder)
@@ -523,6 +528,43 @@ can either be a string or array containing any of the following:
 - `external-requests`: log api requests
 - `served-content`: log serve content requests
 - `database-snapshot`: log database snapshot events
+- `error`: log all internal errors
+
+# castBSON
+
+true to deserialize BSON values emited at {@link MosquitoServerConfig.databaseRules} to their Node.js closest equivalent types
+default value is true
+
+# ddosMap
+
+this prevent ddos attack on this server instance by rate limiting request made to specific endpoint base on client ip address.
+the default value prevent ddos attack to auth endpoint as follows:
+
+```json
+{
+  "auth": {
+    "signup": { "calls": 7, "perSeconds": 1800 },
+    "signin": { "calls": 10, "perSeconds": 600 },
+    "google_signin": { "calls": 7, "perSeconds": 300 }
+  }
+}
+```
+
+you can also provide additional ddos config for other endpoint as follows
+
+```json
+{
+  // provide config for individual endpoint
+  "database": { "read": {...}, "query": {...}, "write": {...}},
+  // limit to 10 request per 10 minute for each storage endpoint
+  "storage": { "calls": 10, "perSeconds": 600 }
+}
+```
+
+# internals
+
+disable remote client access to internal functionalities.
+by default all internal functionalities are enabled for remote client.
 
 ### staticContentProps
 
@@ -723,9 +765,17 @@ purge all tokens references for a user and sign-out the user immediately
 
 disable a user
 
+### getStorageSource
+
+get the local source where a file is stored on the disk
+
+### streamBuffer
+
+stream a file to the storage directory and optionally create hash for it to reduce duplicate file storage
+
 ### uploadBuffer
 
-upload a file to the storage directory
+upload a file to the storage directory and optionally create hash for it to reduce duplicate file storage
 
 ### deleteFile
 
@@ -750,11 +800,6 @@ install backup content from a source to their respective destination
 ```js
 serverApp.linkToFile("http://localhost:5622/storage/users/richard/photo.png");
 ```
-
-<!-- ## Platform using MosquitoTransport in production
-- [Heavenya - christian events](https://heavenya.com)
-- [Inspire - christian audio](https://inspire.com)
-- [ExamJoint - learn, study and prepare for exam](https://examjoint.com) -->
 
 ## Extracting Backup
 
@@ -859,6 +904,11 @@ export const install = {
   },
 };
 ```
+
+<!-- ## Platform using MosquitoTransport in production
+- [Heavenya - christian events](https://heavenya.com)
+- [Inspire - christian audio](https://inspire.com)
+- [ExamJoint - learn, study and prepare for exam](https://examjoint.com) -->
 
 ## Contributing
 
