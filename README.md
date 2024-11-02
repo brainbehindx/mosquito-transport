@@ -184,7 +184,6 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [deleteFile](#deleteFile)
   - [deleteFolder](#deleteFolder)
   - [inspectDocDisconnectionTask](#inspectDocDisconnectionTask)
-  - [linkToFile](#linkToFile)
   - [extractBackup](#extractBackup)
 - [Extracting Backup](#Extracting-Backup)
   - [CLI backup extraction](#CLI-backup-extraction)
@@ -784,22 +783,6 @@ delete file in the storage directory
 ### deleteFolder
 
 delete folder in the storage directory
-
-### linkToFile
-
-convert a link to local file path.
-
-### extractBackup
-
-extract storage and database backup of the `MosquitoTransport` instance
-
-### installBackup
-
-install backup content from a source to their respective destination
-
-```js
-serverApp.linkToFile("http://localhost:5622/storage/users/richard/photo.png");
-```
 
 ## Extracting Backup
 

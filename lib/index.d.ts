@@ -335,15 +335,15 @@ interface StorageDDOS extends DDOS_Limiter {
     delete_folder?: DDOS_Limiter;
 }
 
-interface ApiDDOS extends DDOS_Limiter {
-    [key in string]: DDOS_Limiter;
+interface ApiDDOS {
+    [key: string]: DDOS_Limiter;
 }
 
 interface DDOS_Map {
     auth?: AuthDDOS;
     database?: DatabaseDDOS;
     storage?: StorageDDOS;
-    requests?: ApiDDOS;
+    requests?: ApiDDOS | DDOS_Limiter;
 }
 
 interface MosquitoServerConfig {
@@ -638,11 +638,11 @@ interface JWTAuthData extends AuthData {
 }
 
 interface NewUserAuthData extends AuthData {
-   'google.com': string;
-   'facebook.com': string;
-   'x.com': string;
-   'github.com': string;
-   'apple.com': string;
+    'google.com': string;
+    'facebook.com': string;
+    'x.com': string;
+    'github.com': string;
+    'apple.com': string;
 }
 
 interface MosquitoHttpOptions {
@@ -824,7 +824,6 @@ export default class MosquitoTransportServer {
     updateUserEmailVerify(uid: string, verified: boolean): Promise<void>;
     disableUser(uid: string, disable: boolean): Promise<void>;
     getUserData(uid: string): Promise<UserData>;
-    linkToFile(link: string): string;
 
     /**
      * extract storage and database backup of this `MosquitoTransport` instance
