@@ -1,4 +1,5 @@
-import { MongoClient, serialize } from "mongodb";
+import { MongoClient } from "mongodb";
+import { serialize } from 'mongodb/lib/bson.js';
 import { BLOCKS_IDENTIFIERS, encryptData, isPath, isValidColName, isValidDbName, one_gb, resolvePath } from "./utils.js";
 import { readdir, stat } from "fs/promises";
 import { createReadStream } from "fs";

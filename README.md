@@ -179,8 +179,8 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [signOutUser](#signOutUser)
   - [disableUser](#disableUser)
   - [getStorageSource](#getStorageSource)
-  - [streamBuffer](#streamBuffer)
-  - [uploadBuffer](#uploadBuffer)
+  - [createWriteStream](#createWriteStream)
+  - [writeFile](#writeFile)
   - [deleteFile](#deleteFile)
   - [deleteFolder](#deleteFolder)
   - [inspectDocDisconnectionTask](#inspectDocDisconnectionTask)
@@ -768,13 +768,13 @@ disable a user
 
 get the local source where a file is stored on the disk
 
-### streamBuffer
+### createWriteStream
 
 stream a file to the storage directory and optionally create hash for it to reduce duplicate file storage
 
-### uploadBuffer
+### writeFile
 
-upload a file to the storage directory and optionally create hash for it to reduce duplicate file storage
+write a file to the storage directory and optionally create hash for it to reduce duplicate file storage
 
 ### deleteFile
 

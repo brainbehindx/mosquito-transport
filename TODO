@@ -6,3 +6,4 @@
 - blobify backup
 - hash uploaded files to reduce storage ✅
 - add database path as get static
+- $field of $text

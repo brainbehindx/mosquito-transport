@@ -786,15 +786,15 @@ export default class MosquitoTransportServer {
      * @param createHash optionally create hash for this write to save disk space
      * @param callback function that is called when the stream encounter an error or succeed
      */
-    streamBuffer(destination: string, createHash: undefined | boolean, callback: (err: Error, url: string) => void): PassThrough;
+    createWriteStream(destination: string, createHash: undefined | boolean, callback: (err: Error, url: string) => void): PassThrough;
     /**
-     * upload a file to the storage directory and optionally create hash for it to reduce duplicate file storage
+     * write a file to the storage directory and optionally create hash for it to reduce duplicate file storage
      * 
      * @param destination the location to store the file to
      * @param buffer the file's buffer content
      * @param createHash optionally create hash for this write to save disk space
      */
-    uploadBuffer(destination: string, buffer: Buffer, createHash?: boolean): Promise<string>;
+    writeFile(destination: string, buffer: Buffer, createHash?: boolean): Promise<string>;
     /**
      * delete file in the storage directory
      * @param path the location to the file

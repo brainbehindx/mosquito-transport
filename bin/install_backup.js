@@ -1,5 +1,6 @@
 import { BLOCKS_IDENTIFIERS, decryptData, resolvePath } from "./utils.js";
-import { deserialize, MongoClient } from "mongodb";
+import { MongoClient } from "mongodb";
+import { deserialize } from 'mongodb/lib/bson.js';
 import { mkdir } from "fs/promises";
 import { createWriteStream } from "fs";
 import { ReadableBit } from "@deflexable/bit-stream";
