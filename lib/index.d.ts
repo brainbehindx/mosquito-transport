@@ -276,6 +276,7 @@ interface MSocketSnapshot {
 interface MSocketError {
     error: string;
     message: string;
+    socket: Socket;
 }
 
 interface TransformMediaOption {
@@ -358,7 +359,8 @@ interface MosquitoServerConfig {
 
     storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
     databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void> | undefined;
-    onSocketSnapshot?: (snapshot?: MSocketSnapshot, error?: MSocketError) => void;
+    onSocketSnapshot?: (snapshot?: MSocketSnapshot) => void;
+    onSocketError?: (error?: MSocketError) => void;
     /**
      * the port number you want mosquito-transport instance to be running on
      */
@@ -707,6 +709,13 @@ interface StorageSnapshot {
 
 interface RawBodyRequest extends express.Request {
     rawBody: Buffer;
+}
+
+/**
+ * useful for avoiding encrypting data and extra overhead
+ */
+export class DoNotEncrypt {
+    value: any;
 }
 
 export default class MosquitoTransportServer {
