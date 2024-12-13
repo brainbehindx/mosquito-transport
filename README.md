@@ -888,10 +888,10 @@ export const install = {
 };
 ```
 
-<!-- ## Platform using MosquitoTransport in production
-- [Heavenya - christian events](https://heavenya.com)
-- [Inspire - christian audio](https://inspire.com)
-- [ExamJoint - learn, study and prepare for exam](https://examjoint.com) -->
+## Platform using MosquitoTransport in production
+- [ExamJoint - learn, study and prepare for exam](https://examjoint.com)
+<!-- - [Heavenya - christian events](https://heavenya.com)
+- [Inspire - christian audio](https://inspire.com) -->
 
 ## Contributing
 

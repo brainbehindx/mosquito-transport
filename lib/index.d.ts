@@ -26,7 +26,12 @@ interface PureHttpRequest extends express.Request {
 }
 
 interface StorageRulesSnapshot {
-
+    headers?: IncomingHttpHeaders;
+    auth?: JWTAuthData | undefined;
+    endpoint: 'serveFile' | '_uploadFile' | '_deleteFile' | '_deleteFolder';
+    prescription: {
+        path: string;
+    }
 }
 
 type WriteScope = 'setOne' | 'setMany' | 'updateOne' | 'updateMany' | 'mergeOne' | 'mergeMany' | 'deleteOne' | 'deleteMany' | 'replaceOne' | 'putOne';
@@ -653,7 +658,7 @@ interface MosquitoHttpOptions {
      */
     enforceUser?: boolean;
     /**
-     * admits all request that doesn't have a token or have a token that is valid
+     * admits request that doesn't have a token or have a token that is valid
      */
     validateUser?: boolean;
     /**
@@ -664,8 +669,16 @@ interface MosquitoHttpOptions {
      * disable all internal adds-on such as token validation, end-to-end encryption
      * 
      * this is basically identical to calling `MtInstance.express.use((req, res, next)=> { })`
+     * 
+     * @default false
      */
     rawEntry?: boolean;
+    /**
+     * `true` to accept disabled token
+     * 
+     * @default false
+     */
+    allowDisabledAuth?: boolean;
 }
 
 interface DatabaseListenerOption {
