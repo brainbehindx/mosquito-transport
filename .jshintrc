@@ -1,15 +1,16 @@
 {
-    "undef": true,  // Warns on variables used before declaration
-    "esversion": 12,
-    "globals": {
-        "process": true,
-        "clearTimeout": true,
-        "setTimeout": true,
-        "console": true,
-        "Buffer": true,
-        "clearInterval": true,
-        "setInterval": true,
-        "AbortController": true,
-        "URLSearchParams": true
-    }
+  "undef": true, // Warns on variables used before declaration
+  "esversion": 12,
+  "globals": {
+    "process": true,
+    "clearTimeout": true,
+    "setTimeout": true,
+    "console": true,
+    "Buffer": true,
+    "clearInterval": true,
+    "setInterval": true,
+    "AbortController": true,
+    "URLSearchParams": true,
+    "URL": true
+  }
 }

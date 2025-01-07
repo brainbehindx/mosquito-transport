@@ -31,6 +31,7 @@ interface StorageRulesSnapshot {
     endpoint: 'serveFile' | '_uploadFile' | '_deleteFile' | '_deleteFolder';
     prescription: {
         path: string;
+        createHash?: boolean;
     }
 }
 
@@ -352,6 +353,33 @@ interface DDOS_Map {
     requests?: ApiDDOS | DDOS_Limiter;
 }
 
+export interface InternalRoutes {
+    auth: {
+        _customSignin: '_customSignin',
+        _customSignup: '_customSignup',
+        _refreshAuthToken: '_refreshAuthToken',
+        _googleSignin: '_googleSignin',
+        _signOut: '_signOut',
+        _listenUserVerification: '_listenUserVerification'
+    },
+    database: {
+        _readDocument: '_readDocument',
+        _writeDocument: '_writeDocument',
+        _queryCollection: '_queryCollection',
+        _writeMapDocument: '_writeMapDocument',
+        _documentCount: '_documentCount',
+        _listenCollection: '_listenCollection',
+        _listenDocument: '_listenDocument',
+        _startDisconnectWriteTask: '_startDisconnectWriteTask',
+        _cancelDisconnectWriteTask: '_cancelDisconnectWriteTask'
+    },
+    storage: {
+        _uploadFile: '_uploadFile',
+        _deleteFile: '_deleteFile',
+        _deleteFolder: '_deleteFolder'
+    }
+}
+
 interface MosquitoServerConfig {
     /**
      * the name for your mosquito-transport instance. this is required and used internally by both the backend and frontend client
@@ -376,6 +404,13 @@ interface MosquitoServerConfig {
      * Please note: this is an experimental feature
      */
     enableSequentialUid?: boolean;
+    /**
+     * set to true for this instance to automatically delete token references when they expire.
+     * 
+     * Please note that all token references are managed on the system's memory
+     * @default true
+     */
+    autoPurgeToken?: boolean;
     /**
      * a random string used by the frontend client for accessing internal resources
      */
@@ -423,9 +458,9 @@ interface MosquitoServerConfig {
      * by default all internal functionalities are enabled for remote client
      */
     internals?: {
-        auth: boolean;
-        database: boolean;
-        storage: boolean;
+        auth: boolean | (keyof InternalRoutes['auth'])[];
+        database: boolean | (keyof InternalRoutes['database'])[];
+        storage: boolean | (keyof InternalRoutes['storage'])[];
     };
     /**
      * this should be a valid http or https link. it is used internally while signing jwt and for prefixing storage `downloadUrl` when uploading a file by frontend client
@@ -800,7 +835,7 @@ export default class MosquitoTransportServer {
      * get the local source where a file is stored on the disk
      * @param path the location of the file
      */
-    getStorageSource(path: string): { source: string, hashValue?: string } | null;
+    getStorageSource(path: string): Promise<{ source: string, hashValue?: string } | null>;
     /**
      * stream a file to the storage directory and optionally create hash for it to reduce duplicate file storage
      * 
@@ -824,7 +859,7 @@ export default class MosquitoTransportServer {
     deleteFile(path: string): Promise<void>;
     /**
      * delete folder in the storage directory
-     * @param path the location to the file
+     * @param path the location to the directory
      */
     deleteFolder(path: string): Promise<void>;
     /**

@@ -1,6 +1,6 @@
 # mosquito-transport
 
-MosquitoTransport is a powerful wrapper around mongodb and express that enables developers to persist and synchronize data between their MongoDB database and frontend applications. It offers a centralized and self-hosted solution for managing server infrastructure and data, along with robust authentication, real-time data updates, scalability, and cross-platform compatibility.
+Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility.
 
 Under the hood, mosquito-transport uses Mongodb to store it data, along with [express](https://www.npmjs.com/package/express), [socket.io](https://www.npmjs.com/package/socket.io) for making request and [jwt](https://www.npmjs.com/package/jsonwebtoken) for signing authentication token, so make sure you have [mongodb](https://www.mongodb.com/docs/manual/installation/) installed before using this package.
 
@@ -110,7 +110,7 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
 
 ### SDKs And Hacks
 
-- [react-native-mosquito-transport](https://github.com/deflexable/react-native-mosquito-transport) for react native apps
+- [react-native-mosquito-transport](https://github.com/brainbehindx/react-native-mosquito-transport) for react native apps
 - [mosquito-transport-web](https://github.com/brainbehindx/mosquito-transport-js) for web platform
 - [mongodb-hack-middleware](https://github.com/deflexable/mongodb-middleware-utils) hacks for querying random document and fulltext search
 

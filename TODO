@@ -1,9 +1,9 @@
-- add method for creating user account
-- add method for login user account
-- add two factor auth functionality to jwt token
-- uniquify db json event
+- add method for creating user account ✅
+- add method for login user account ✅
+# - add two factor auth functionality to jwt token
+- uniquify db json event ✅
 - document extraction ✅
-- blobify backup
+- blobify backup ✅
 - hash uploaded files to reduce storage ✅
 - add database path as get static
 - $field of $text

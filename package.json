@@ -1,7 +1,7 @@
 {
   "name": "mosquito-transport",
-  "version": "1.6.3",
-  "description": "MosquitoTransport is a powerful tool that helps persist and synchronize data between your MongoDB database and frontend applications",
+  "version": "1.6.4",
+  "description": "Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility",
   "main": "lib/index.js",
   "type": "module",
   "directories": {
@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deflexable/mosquito-transport.git"
+    "url": "git+https://github.com/brainbehindx/mosquito-transport.git"
   },
   "keywords": [
     "javascript",
@@ -32,9 +32,9 @@
   "author": "Anthony Onabanjo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/deflexable/mosquito-transport/issues"
+    "url": "https://github.com/brainbehindx/mosquito-transport/issues"
   },
-  "homepage": "https://github.com/deflexable/mosquito-transport#readme",
+  "homepage": "https://github.com/brainbehindx/mosquito-transport#readme",
   "dependencies": {
     "@deflexable/bit-stream": "^1.0.4",
     "buffer": "^6.0.3",
