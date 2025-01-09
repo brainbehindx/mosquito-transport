@@ -697,7 +697,7 @@ interface MosquitoHttpOptions {
      */
     validateUser?: boolean;
     /**
-     * reject request if the sent token does not have a verified email address
+     * `true` to reject request if the sent token does not have a verified email address
      */
     enforceVerifiedUser?: boolean;
     /**

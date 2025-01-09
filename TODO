@@ -7,3 +7,4 @@
 - hash uploaded files to reduce storage ✅
 - add database path as get static
 - $field of $text
+- set no-cache for internal routes
