@@ -633,6 +633,21 @@ interface MosquitoServerConfig {
      * You may intercept this middleware to manage and prevent ddos attack and handle some custom route such as `favicon.ico`
      */
     preMiddlewares?: express.Handler | express.Handler[];
+    /**
+     * maximum numbers of simultaneous ffmpeg tasks that can be executed at once while transcoding a video file
+     * 
+     * the default value is `undefined` which allows unlimited number of ffmpeg tasks to be executed simultaneously. This may cause bottle-neck and overwhelm your VM
+     */
+    maxFfmpegTasks?: number;
+    /**
+     * the encoder to be used while transcoding video file.
+     * This enables you to use other forms of encoder (gpu, qsv, amf, v4l2, e.t.c) and executing tasks on other hardware device
+     * 
+     * the default value utilizes `libx264` and the entire cpu threads
+     * 
+     * @default `libx264 -threads ${cpus().length}`
+     */
+    ffmpegEncoderArg?: string;
 }
 
 interface UserProfile {
