@@ -6,6 +6,10 @@
 - blobify backup ✅
 - hash uploaded files to reduce storage ✅
 - add database path as get static
-- $field of $text
+- $field of $text ✅
 - set no-cache for internal routes ✅
 - queue transcoding ✅
+- minimize extraction data ✅
+- add `TIMESTAMP_OFFSET` ✅
+- add maxSimulatenousAuth
+- cross emailVerify

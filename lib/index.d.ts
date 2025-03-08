@@ -56,6 +56,11 @@ interface DatabaseRulesIOPrescription {
     scope?: WriteScope;
 }
 
+interface DatabaseRulesOnConnectPrescription {
+    connectTask?: DatabaseRulesBatchWritePrescription | undefined;
+    disconnectTask?: DatabaseRulesBatchWritePrescription | undefined;
+}
+
 interface PrescribedExtraction {
     collection: string;
     sort?: Sort;
@@ -81,8 +86,8 @@ interface DatabaseRulesBatchWritePrescription {
 interface DatabaseRulesSnapshot {
     headers: IncomingHttpHeaders;
     auth?: JWTAuthData | undefined;
-    endpoint: '_readDocument' | '_queryCollection' | '_writeDocument' | '_writeMapDocument' | '_documentCount' | '_listenCollection' | '_listenDocument' | '_startDisconnectWriteTask' | '_cancelDisconnectWriteTask';
-    prescription?: DatabaseRulesIOPrescription | DatabaseRulesBatchWritePrescription;
+    endpoint: '_readDocument' | '_queryCollection' | '_writeDocument' | '_writeMapDocument' | '_documentCount' | '_listenCollection' | '_listenDocument' | '_connectionTask' | '_disconnectionTask' | '_cancelDisconnectWriteTask';
+    prescription?: DatabaseRulesIOPrescription | DatabaseRulesBatchWritePrescription | DatabaseRulesOnConnectPrescription;
     dbName?: string;
     dbRef?: string;
 }
@@ -117,7 +122,7 @@ interface RawObject {
     [key: string]: any
 }
 
-interface SneakSignupAuthConfig {
+interface NewAuthInterceptionConfig {
     email?: string;
     password?: string;
     photo?: string;
@@ -210,7 +215,7 @@ interface StaticContentProps {
     start?: number | undefined;
 }
 
-interface SneakSignupAuthResult {
+interface NewAuthInterceptionResult {
     metadata?: AuthData['metadata'];
     profile?: AuthData['profile'];
     uid?: string;
@@ -276,7 +281,8 @@ interface MSocketSnapshot {
     emitWithAck: Socket['emitWithAck'];
     timeout: (timeout: number) => ({
         emitWithAck: Socket['emitWithAck'];
-    })
+    });
+    disconnect: Socket['disconnect'];
 }
 
 interface MSocketError {
@@ -412,10 +418,6 @@ interface MosquitoServerConfig {
      */
     autoPurgeToken?: boolean;
     /**
-     * a random string used by the frontend client for accessing internal resources
-     */
-    accessKey: string;
-    /**
      * can either be a string or array containing any of the following:
      * 
      * - `all`: log all requests
@@ -452,6 +454,20 @@ interface MosquitoServerConfig {
      * ```
      */
     ddosMap: DDOS_Map;
+    /**
+     * defines a way for internal functionality (such as ddos) to extract ip address from incoming request.
+     * 
+     * the default value is `ip`, therefore the resultant ip will be: `req['ip']`
+     * 
+     * @example
+     * 
+     * ```js
+     * // in scenerio where you are using cloudflare argo tunnel, you can provide ip like this
+     * ipNode: (req) => req.headers['cf-connecting-ip']
+     * ```
+     * @default 'ip'
+     */
+    ipNode: string | ((req: express.Request) => string);
     /**
      * disable remote client access to internal functionalities
      * 
@@ -513,7 +529,6 @@ interface MosquitoServerConfig {
      * 
      * const webInstance = new MosquitoTransport({
      *   projectUrl: 'http://localhost:4534/app_name',
-     *   accessKey: 'some_unique_string',
      *   ...options
      * });
      * 
@@ -549,7 +564,7 @@ interface MosquitoServerConfig {
      * 
      * const serverApp = new MosquitoTransportServer({
      *     ...otherProps,
-     *     sneakSignupAuth: ({ request, email, name, password, method }) => {
+     *     interceptNewAuth: ({ request, email, name, password, method }) => {
      *         const geo = lookupIpAddress(request.ip);
      *         if (!geo) throw 'Failed to lookup request location';
      *         if (blacklisted_country.includes(geo.country))
@@ -574,7 +589,7 @@ interface MosquitoServerConfig {
      * });
      * ```
      */
-    sneakSignupAuth?: (config: SneakSignupAuthConfig) => Promise<SneakSignupAuthResult>;
+    interceptNewAuth?: (config: NewAuthInterceptionConfig) => Promise<NewAuthInterceptionResult>;
     /**
      * a function that is called when a user's mosquito client sdk is authenticated and online
      * 
@@ -749,20 +764,6 @@ interface DatabaseListenerCallbackData {
     documentKey: string;
 }
 
-interface WriteCommand {
-
-}
-
-interface DisconnectTaskInspector extends SimpleError {
-    status?: 'completed' | 'error' | 'cancelled';
-    committed?: boolean;
-    task?: ({
-        commands: WriteCommand;
-        dbName?: string;
-        dbRef?: string;
-    })
-}
-
 interface StorageSnapshot {
     uri: string;
     dest: string;
@@ -884,10 +885,9 @@ export default class MosquitoTransportServer {
     listenNewUser(callback?: (user: NewUserAuthData) => void): void;
     /**
      * listen to deletedUser
-     * @param callback event called when a user account was deleted on this Server Instance
+     * @param callback event called when a user account is deleted on this Server Instance
      */
     listenDeletedUser(callback?: (uid: string) => void): void;
-    inspectDocDisconnectionTask(callback?: (data: DisconnectTaskInspector) => void): void;
     updateUserProfile(uid: string, profile: UserProfile): Promise<void>;
     updateUserMetadata(uid: string, metadata: GeneralObject): Promise<void>;
     updateUserClaims(uid: string, claims: RawObject): Promise<void>;
@@ -996,6 +996,9 @@ export function FIND_GEO_JSON(coordinates: [latitude, longitude], offSetMeters: 
 };
 
 export const AUTH_PROVIDER_ID: auth_provider_id;
+
+export const TIMESTAMP: { $timestamp: 'now' };
+export function TIMESTAMP_OFFSET(offset: number): { $timestamp_offset: number };
 
 interface auth_provider_id {
     GOOGLE: 'google';

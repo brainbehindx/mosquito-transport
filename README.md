@@ -57,8 +57,7 @@ dbInstance
 const serverApp = new MosquitoTransportServer({
   projectName: "app_name",
   port: 4534, // defaults to 4291
-  signerKey: "random_90_hash_key_for_signing_jwt_tokens", // must be 90 length
-  accessKey: "some_unique_string",
+  signerKey: "random_90_hash_key_for_signing_jwt_tokens", // must be 90 characters
   externalAddress: "https://example.yourdomain.com",
   mongoInstances: {
     // this is where user info and tokens is stored
@@ -124,13 +123,12 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [databaseRules](#databaseRules)
   - [accessTokenInterval](#accessTokenInterval)
   - [refreshTokenExpiry](#refreshTokenExpiry)
-  - [accessKey](#accessKey)
   - [mongoInstances](#mongoInstances)
   - [externalAddress](#externalAddress)
   - [hostname](#hostname)
   - [enableSequentialUid](#enableSequentialUid)
   - [mergeAuthAccount](#mergeAuthAccount)
-  - [sneakSignupAuth](#sneakSignupAuth)
+  - [interceptNewAuth](#interceptNewAuth)
   - [onUserMounted](#onUserMounted)
   - [uidLength](#uidLength)
   - [enforceE2E](#enforceE2E)
@@ -183,7 +181,6 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [writeFile](#writeFile)
   - [deleteFile](#deleteFile)
   - [deleteFolder](#deleteFolder)
-  - [inspectDocDisconnectionTask](#inspectDocDisconnectionTask)
   - [extractBackup](#extractBackup)
 - [Extracting Backup](#Extracting-Backup)
   - [CLI backup extraction](#CLI-backup-extraction)
@@ -235,10 +232,6 @@ numbers of milliseconds until generated access token expires. Defaults to `1 hou
 
 numbers of milliseconds until generated refresh token expires. Defaults to `1 month` (2419200000).
 
-### accessKey
-
-a random string used by the frontend client for accessing internal resources.
-
 ### mongoInstances
 
 an object that maps names to your mongodb instance. if no `dbRef` were provided, the `default` mongodb instance will be used.
@@ -281,7 +274,6 @@ const serverApp = new MosquitoTransportServer({
 
 const webInstance = new MosquitoTransport({
   projectUrl: "http://localhost:4534/app_name",
-  accessKey: "some_unique_string",
   ...options,
 });
 
@@ -321,7 +313,7 @@ true if you want new users to be assign a sequential `uid` like 0, 1, 2, 3, 4, 5
 
 true if you want to threat the same email address from different auth provider as a single user.
 
-### sneakSignupAuth
+### interceptNewAuth
 
 a function use in preventing signup and adding metadata before signup
 
@@ -332,7 +324,7 @@ const blacklisted_country = ["RU", "AF", "NG"];
 
 const serverApp = new MosquitoTransportServer({
   ...otherProps,
-  sneakSignupAuth: ({ request, email, name, password, method }) => {
+  interceptNewAuth: ({ request, email, name, password, method }) => {
     const geo = lookupIpAddress(request.ip);
     if (!geo) throw "Failed to lookup request location";
 
