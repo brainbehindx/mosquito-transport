@@ -13,3 +13,4 @@
 - add `TIMESTAMP_OFFSET` ✅
 - add maxSimulatenousAuth
 - cross emailVerify
+- add revalidate and reverify method to auth-response
