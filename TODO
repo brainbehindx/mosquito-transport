@@ -14,3 +14,4 @@
 - add maxSimulatenousAuth
 - cross emailVerify
 - add revalidate and reverify method to auth-response
+- remove enforceVerifiedUser and validateUser to enforceUser
