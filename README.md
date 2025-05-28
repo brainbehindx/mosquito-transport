@@ -173,7 +173,7 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [updateUserClaims](#updateUserClaims)
   - [updateUserEmailAddress](#updateUserEmailAddress)
   - [updateUserPassword](#updateUserPassword)
-  - [updateUserEmailVerify](#updateUserEmailVerify)
+  - [updateUserPasswordVerified](#updateUserPasswordVerified)
   - [signOutUser](#signOutUser)
   - [disableUser](#disableUser)
   - [getStorageSource](#getStorageSource)
@@ -744,7 +744,7 @@ update the email address of a user
 
 update the user password of a user
 
-### updateUserEmailVerify
+### updateUserPasswordVerified
 
 update the verify status of a user
 

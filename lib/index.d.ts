@@ -633,6 +633,16 @@ interface MosquitoServerConfig {
     corsOrigin?: CorsOptions;
     maxRequestBufferSize?: number;
     maxUploadBufferSize?: number;
+    /**
+     * How long the server waits for a pong from the client before disconnecting
+     * @default 4000
+     */
+    pingTimeout?: number;
+    /**
+     * How often the server sends a ping to the client
+     * @default 1700
+     */
+    pingInterval?: number;
     uidLength?: number;
     accessTokenInterval?: number;
     refreshTokenExpiry?: number;
@@ -682,7 +692,9 @@ interface AuthData {
     joinedOn: number;
     uid: string;
     claims: RawObject;
-    emailVerified: boolean;
+    lastLoginAt: number;
+    passwordVerified: boolean;
+    authVerified: boolean;
     tokenID: string;
     disabled: boolean;
     entityOf: string;
@@ -694,6 +706,7 @@ interface AuthData {
     aud: string;
     iss: string;
     sub: string;
+    toString(): string;
 }
 
 interface RefreshTokenData {
@@ -719,18 +732,6 @@ interface NewUserAuthData extends AuthData {
 }
 
 interface MosquitoHttpOptions {
-    /**
-     * reject request that doesn't have a token or have invalid tokens
-     */
-    enforceUser?: boolean;
-    /**
-     * admits request that doesn't have a token or have a token that is valid
-     */
-    validateUser?: boolean;
-    /**
-     * `true` to reject request if the sent token does not have a verified email address
-     */
-    enforceVerifiedUser?: boolean;
     /**
      * disable all internal adds-on such as token validation, end-to-end encryption
      * 
@@ -894,7 +895,7 @@ export default class MosquitoTransportServer {
     updateUserClaims(uid: string, claims: RawObject): Promise<void>;
     updateUserEmailAddress(uid: string, email: string): Promise<void>;
     updateUserPassword(uid: string, password: string): Promise<void>;
-    updateUserEmailVerify(uid: string, verified: boolean): Promise<void>;
+    updateUserPasswordVerified(uid: string, verified: boolean): Promise<void>;
     disableUser(uid: string, disable: boolean): Promise<void>;
     getUserData(uid: string): Promise<UserData>;
 
