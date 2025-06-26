@@ -283,6 +283,9 @@ interface MSocketSnapshot {
         emitWithAck: Socket['emitWithAck'];
     });
     disconnect: Socket['disconnect'];
+    /**
+     * Whether the socket is currently disconnected
+     */
     disconnected: boolean;
 }
 
