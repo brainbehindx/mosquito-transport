@@ -726,7 +726,20 @@ interface JWTAuthData extends AuthData {
     token: string;
 }
 
-interface NewUserAuthData extends AuthData {
+interface KeyValue {
+    [key: string]: any
+}
+
+interface NewUserAuthData {
+    claims?: KeyValue | undefined;
+    metadata?: KeyValue | undefined;
+    signupMethod: auth_provider_id_values;
+    joinedOn: number;
+    disabled: boolean;
+    password?: boolean | undefined;
+    passwordVerified?: boolean | undefined;
+    profile?: UserProfile | undefined;
+    email?: string;
     'google': string;
     'facebook': string;
     'x': string;
