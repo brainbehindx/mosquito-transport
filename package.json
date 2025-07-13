@@ -1,6 +1,6 @@
 {
   "name": "mosquito-transport",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility",
   "main": "lib/index.js",
   "type": "module",
@@ -46,7 +46,6 @@
     "guard-object": "^1.1.4",
     "jsonwebtoken": "^9.0.0",
     "limit-task": "1.0.0",
-    "lodash": "^4.17.21",
     "mime": "^4.0.7",
     "node-fetch": "^3.3.1",
     "poke-object": "^1.0.1",
