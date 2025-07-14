@@ -1,6 +1,6 @@
 {
   "name": "mosquito-transport",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility",
   "main": "lib/index.js",
   "type": "module",
@@ -38,10 +38,10 @@
   "dependencies": {
     "@deflexable/bit-stream": "^1.0.4",
     "buffer": "^6.0.3",
-    "compression": "^1.7.4",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
     "entity-serializer": "^1.0.3",
-    "express": "^4.18.2",
+    "express": "^5.1.0",
     "google-auth-library": "^8.8.0",
     "guard-object": "^1.1.4",
     "jsonwebtoken": "^9.0.0",
@@ -51,7 +51,7 @@
     "poke-object": "^1.0.1",
     "set-large-timeout": "^1.0.1",
     "simplify-error": "^1.0.1",
-    "socket.io": "^4.6.1",
+    "socket.io": "^4.8.1",
     "subscription-listener": "^1.1.2",
     "tweetnacl-functional": "^1.0.5"
   },
