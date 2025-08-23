@@ -396,7 +396,9 @@ interface MosquitoServerConfig {
      */
     projectName: string;
     /**
-     * a 90 character string which is used in signing jwt access and refresh token
+     * a character string which is used in signing jwt access and refresh token
+     * 
+     * must be at least 32 characters
      */
     signerKey: string;
 
@@ -886,6 +888,18 @@ export default class MosquitoTransportServer {
      * @param createHash optionally create hash for this write to save disk space
      */
     writeFile(destination: string, buffer: Buffer, createHash?: boolean): Promise<string>;
+    /**
+     * read file from the storage directory
+     * 
+     * @param path the path to the stored file
+     */
+    readFile(path: string): Promise<Buffer>;
+    /**
+     * stream file content from the storage directory
+     * 
+     * @param path the location to the stored file
+     */
+    createReadStream(path: string): PassThrough;
     /**
      * delete file in the storage directory
      * @param path the location to the file

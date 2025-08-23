@@ -206,7 +206,8 @@ the name for your mosquito-transport instance. this is required and used interna
 
 ### signerKey
 
-a 90 character string which is used in signing jwt access and refresh token.
+a character string which is used in signing jwt access and refresh token.
+must be at least 32 characters
 
 ### port
 
