@@ -1,6 +1,6 @@
 {
   "name": "mosquito-transport",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "description": "Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility",
   "main": "lib/index.js",
   "type": "module",
