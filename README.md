@@ -537,7 +537,8 @@ the default value prevent ddos attack to auth endpoint as follows:
   "auth": {
     "signup": { "calls": 7, "perSeconds": 1800 },
     "signin": { "calls": 10, "perSeconds": 600 },
-    "google_signin": { "calls": 7, "perSeconds": 300 }
+    "google_signin": { "calls": 7, "perSeconds": 300 },
+    "apple_signin": { "calls": 7,  "perSeconds": 300 }
   }
 }
 ```
