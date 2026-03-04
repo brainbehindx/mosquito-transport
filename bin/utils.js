@@ -4,6 +4,11 @@ import { createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 export const one_mb = 1024 * 1024,
     one_gb = one_mb * 1024;
 
+export const wait = (ms = 1000) =>
+    new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+
 export const BLOCKS_IDENTIFIERS = {
     DB_URL: '--->[DB_URL]:',
     DB_NAME: '--->[DB_NAME]:',

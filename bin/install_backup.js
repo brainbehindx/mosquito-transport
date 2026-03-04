@@ -1,4 +1,4 @@
-import { BLOCKS_IDENTIFIERS, decryptData, resolvePath } from "./utils.js";
+import { BLOCKS_IDENTIFIERS, decryptData, resolvePath, wait } from "./utils.js";
 import { MongoClient } from "mongodb";
 import { deserialize } from 'mongodb/lib/bson.js';
 import { mkdir } from "fs/promises";
@@ -100,7 +100,9 @@ export const installBackup = (config) => new Promise((callResolve, callReject) =
                         { ...docRest },
                         { upsert: true }
                     );
-                    ++installionStats.totalWrittenDocuments;
+                    if (!(++installionStats.totalWrittenDocuments % 300)) {
+                        await wait(7); // pause for garbage collection
+                    }
                 } else {
                     lastBlocks.database = INIT_BLOCKS.database;
 
@@ -135,7 +137,9 @@ export const installBackup = (config) => new Promise((callResolve, callReject) =
                             const writeStream = createWriteStream(lastBlocks.storage.path);
                             writeStream.write(thisElem);
                             lastBlocks.storage.file = writeStream;
-                            ++installionStats.totalWrittenFiles;
+                            if (!(++installionStats.totalWrittenFiles % 50)) {
+                                await wait(3); // pause for garbage collection
+                            };
                         };
                     } else throw `unknown block identifier "${prevHeader}" at block_id ${BLOCK_ID}`;
                 }

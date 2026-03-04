@@ -1,4 +1,4 @@
-import { Db, Document, MongoClient, MongoClientOptions, SortDirection, UpdateDescription } from "mongodb";
+import { ChangeStreamOptions, Db, Document, MongoClient, MongoClientOptions, SortDirection, UpdateDescription } from "mongodb";
 import express from "express";
 import { CorsOptions } from "cors";
 import { Sort } from "mongodb";
@@ -882,22 +882,24 @@ interface MosquitoHttpOptions {
     allowDisabledAuth?: boolean;
 }
 
-interface DatabaseListenerOption {
-    includeBeforeData?: boolean;
-    includeAfterData?: boolean;
+interface DatabaseListenerOption extends ChangeStreamOptions {
+    /**
+     * An array of {@link https://www.mongodb.com/docs/manual/reference/operator/aggregation-pipeline/|aggregation pipeline stages} through which to pass change stream documents. This allows for filtering (using $match) and manipulating the change stream documents.
+     */
     pipeline?: { pipeline?: Document[] }
 }
 
 interface DatabaseListenerCallbackData {
     insertion?: { _id: string };
+    update?: UpdateDescription;
+    replacement?: { _id: string };
     deletion?: string;
-    update?: UpdateDescription,
-    before?: Document,
-    after?: Document,
-    timestamp: number,
-    auth?: AuthData | undefined,
-    operation: 'insert' | 'delete' | 'update';
+    before?: Document;
+    after?: Document;
+    timestamp: number;
+    operation: 'insert' | 'update' | 'replace' | 'delete';
     documentKey: string;
+    extras: any
 }
 
 interface StorageSnapshot {

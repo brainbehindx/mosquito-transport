@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 import { serialize } from 'mongodb/lib/bson.js';
-import { BLOCKS_IDENTIFIERS, encryptData, isPath, isValidColName, isValidDbName, one_gb, resolvePath } from "./utils.js";
+import { BLOCKS_IDENTIFIERS, encryptData, isPath, isValidColName, isValidDbName, one_gb, resolvePath, wait } from "./utils.js";
 import { readdir, stat } from "fs/promises";
 import { createReadStream } from "fs";
 import { Validator } from "guard-object";
@@ -8,7 +8,7 @@ import { WritableBit } from "@deflexable/bit-stream";
 import { join } from "path";
 
 const BIT_SIZE = one_gb * .2;
-const DOC_LIMITER = 500;
+const DOC_LIMITER = 300;
 
 export const extractBackup = (config) => {
     let { database, storage, password, onMongodbOption } = { ...config };
@@ -90,6 +90,7 @@ export const extractBackup = (config) => {
                             pushBuffer(Buffer.from(`${thisCol}`, 'utf8'));
 
                             while (canLoadMore) {
+                                await wait(7); // pause for garbage collection
                                 const data = await dbNameInstance.collection(thisCol).find({})
                                     .skip(offset).limit(DOC_LIMITER).toArray();
                                 offset += DOC_LIMITER;
@@ -149,6 +150,7 @@ export const extractBackup = (config) => {
                                 reject(err);
                             });
                         });
+                        await wait(1); // pause for garbage collection
                     } else {
                         const files = await readdir(dir);
                         if (files.length) {
