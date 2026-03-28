@@ -1,6 +1,6 @@
 {
   "name": "mosquito-transport",
-  "version": "1.9.3",
+  "version": "1.9.4",
   "description": "Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility",
   "main": "lib/index.js",
   "type": "module",
@@ -37,6 +37,7 @@
   "homepage": "https://github.com/brainbehindx/mosquito-transport#readme",
   "dependencies": {
     "@deflexable/bit-stream": "^1.0.4",
+    "argon2": "^0.44.0",
     "buffer": "^6.0.3",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

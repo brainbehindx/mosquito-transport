@@ -6,7 +6,7 @@ import { Filter } from "mongodb";
 import { UpdateFilter } from "mongodb";
 import type { IncomingHttpHeaders } from "http";
 import type { ParsedUrlQuery } from "querystring";
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { Transform, PassThrough } from "stream";
 
 interface GoogleTokenPayload {
@@ -520,7 +520,8 @@ interface MosquitoServerConfig {
     storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
     databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void> | undefined;
     onSocketSnapshot?: (snapshot?: MSocketSnapshot) => void;
-    onSocketError?: (error?: MSocketError) => void;
+    onSocketError?: ((error?: MSocketError) => void) | undefined;
+    useSocketServer?: ((io: Server) => void) | undefined;
     /**
      * the port number you want mosquito-transport instance to be running on
      */
@@ -538,6 +539,15 @@ interface MosquitoServerConfig {
      * @default true
      */
     autoPurgeToken?: boolean;
+
+    /**
+     * By default, issued access tokens are stateless. Set this to `true` to enable stateful access tokens.
+     * 
+     * Enabling this introduces an additional security layer during validation, where the system cross-checks the provided token against a refresh token reference stored in the database to confirm its legitimacy.
+     * 
+     * @default false
+     */
+    enableStatefulAccessToken?: boolean | undefined;
     /**
      * can either be a string or array containing any of the following:
      * 
