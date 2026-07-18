@@ -946,6 +946,9 @@ export default class MosquitoTransportServer {
 
     get express(): express.Application;
 
+    get db(): Db;
+    get admin_db(): Db;
+
     getDatabase(dbName?: string, dbRef?: string): Db;
 
     /**
