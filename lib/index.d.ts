@@ -760,7 +760,7 @@ interface MosquitoServerConfig {
     fallbackAuthConfig?: FallbackAuthConfig;
     staticContentProps?: StaticContentProps;
     staticContentMaxAge?: number;
-    staticContentCacheControl?: number;
+    staticContentCacheControl?: boolean | undefined;
     corsOrigin?: CorsOptions;
     maxRequestBufferSize?: number;
     maxUploadBufferSize?: number;
@@ -1059,40 +1059,6 @@ export default class MosquitoTransportServer {
     updateUserPasswordVerified(uid: string, verified: boolean): Promise<void>;
     disableUser(uid: string, disable: boolean): Promise<void>;
     getUserData(uid: string): Promise<UserData>;
-
-    /**
-     * extract storage and database backup of this `MosquitoTransport` instance
-     * 
-     * @example
-     * ```js
-     * import MosquitoTransportServer from "mosquito-transport";
-     * 
-     * const serverApp = new MosquitoTransportServer({
-     *     ...otherProps
-     * });
-     * 
-     * const stream = createWriteStream('./backup.bin');
-     * 
-     * serverApp.extractBackup().pipe(stream);
-     * 
-     * ```
-     * 
-     * it is recommended to extract backup from the cli while no MosquitoTransport
-     * instance is running as to avoid inconsistency in the extracted data
-     * 
-     * @returns `Transform` stream to read from
-     */
-    extractBackup(config?: BackupExtraction): Transform;
-
-    /**
-     * install backup content from a source to the respective destination
-     * 
-     * it is recommended to install backup from the cli while no MosquitoTransport
-     * instance is running as to avoid inconsistency in data installation
-     * 
-     * @returns a promise
-     */
-    installBackup(): Promise<BackupInstallationResult>;
 }
 
 interface BackupInstallationResult {
