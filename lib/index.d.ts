@@ -1,4 +1,4 @@
-import { ChangeStreamOptions, Db, Document, MongoClient, MongoClientOptions, SortDirection, UpdateDescription } from "mongodb";
+import { ChangeStreamOptions, Db, Document, MongoClient, SortDirection, UpdateDescription } from "mongodb";
 import express from "express";
 import { CorsOptions } from "cors";
 import { Sort } from "mongodb";
@@ -7,7 +7,7 @@ import { UpdateFilter } from "mongodb";
 import type { IncomingHttpHeaders } from "http";
 import type { ParsedUrlQuery } from "querystring";
 import { Server, Socket } from "socket.io";
-import { Transform, PassThrough } from "stream";
+import { PassThrough } from "stream";
 
 interface GoogleTokenPayload {
     /**
@@ -202,8 +202,8 @@ interface DatabaseRulesSnapshot {
     auth?: JWTAuthData | undefined;
     endpoint: '_readDocument' | '_queryCollection' | '_writeDocument' | '_writeMapDocument' | '_documentCount' | '_listenCollection' | '_listenDocument' | '_connectionTask' | '_disconnectionTask' | '_cancelDisconnectWriteTask';
     prescription?: DatabaseRulesIOPrescription | DatabaseRulesBatchWritePrescription | DatabaseRulesOnConnectPrescription;
-    dbName?: string;
-    dbRef?: string;
+    dbInstance?: string | undefined;
+    dbName?: string | undefined;
 }
 
 type LogLevel = 'all' | 'auth' | 'database' | 'storage' | 'external-requests' | 'served-content' | 'database-snapshot' | 'error';
@@ -237,6 +237,8 @@ interface RawObject {
     [key: string]: any
 }
 
+type Platform = "ios" | "android" | "macos" | "windows" | "web";
+
 interface NewAuthInterceptionConfig {
     email?: string;
     password?: string;
@@ -247,6 +249,7 @@ interface NewAuthInterceptionConfig {
     request: express.Request;
     method: auth_provider_id_values;
     providerData?: GoogleTokenPayload | AppleTokenPayload;
+    platform: Platform;
 }
 
 interface StaticContentProps {
@@ -334,6 +337,7 @@ interface NewAuthInterceptionResult {
     metadata?: AuthData['metadata'];
     profile?: AuthData['profile'];
     uid?: string;
+    passwordVerified?: boolean | undefined;
 }
 
 interface MSocketHandshake {
@@ -421,13 +425,8 @@ interface TransformMediaRoute {
     transform: (options: TransformMediaOption) => Buffer | string | null | undefined;
 }
 
-interface MongoInstances {
-    defaultName?: string;
-    instance: MongoClient;
-}
-
 interface MongoInstancesMap {
-    [key: 'default' | 'admin' | string]: MongoInstances;
+    [key: 'default' | 'admin' | string]: Db;
 }
 
 interface UserMountedEvent {
@@ -451,6 +450,7 @@ interface AuthDDOS extends DDOS_Limiter {
     signin?: DDOS_Limiter;
     signout?: DDOS_Limiter;
     refresh_token?: DDOS_Limiter;
+    upgrade_token?: DDOS_Limiter;
     google_signin?: DDOS_Limiter;
 }
 
@@ -505,6 +505,11 @@ export interface InternalRoutes {
     }
 }
 
+interface TokenUpgradeEvent {
+    input: any;
+    user: AuthData;
+}
+
 interface MosquitoServerConfig {
     /**
      * the name for your mosquito-transport instance. this is required and used internally by both the backend and frontend client
@@ -516,12 +521,12 @@ interface MosquitoServerConfig {
      * must be at least 32 characters
      */
     signerKey: string;
-
     storageRules: (snapshot?: StorageRulesSnapshot) => Promise<void> | undefined;
-    databaseRules: (snapshot?: DatabaseRulesSnapshot) => Promise<void> | undefined;
-    onSocketSnapshot?: (snapshot?: MSocketSnapshot) => void;
+    databaseRules: (snapshot: DatabaseRulesSnapshot, throwRateLimit: (key: string, calls: number, perSeconds: number) => void) => Promise<void> | undefined;
+    onSocketSnapshot?: (snapshot: MSocketSnapshot, throwRateLimit: (key: string, calls: number, perSeconds: number) => void) => void;
     onSocketError?: ((error?: MSocketError) => void) | undefined;
     useSocketServer?: ((io: Server) => void) | undefined;
+    onHandleTokenUpgrade: (snapshot: TokenUpgradeEvent) => Promise<any> | undefined;
     /**
      * the port number you want mosquito-transport instance to be running on
      */
@@ -563,12 +568,6 @@ interface MosquitoServerConfig {
      * @default `error`
      */
     logger?: LogLevel | LogLevel[];
-    /**
-     * true to deserialize BSON values emited at {@link MosquitoServerConfig.databaseRules} to their Node.js closest equivalent types
-     * 
-     * @default true
-     */
-    castBSON: boolean;
     /**
      * this prevent ddos attack on this server instance by rate limiting request made to specific endpoint base on client ip address.
      * 
@@ -826,6 +825,8 @@ interface AuthData {
     lastLoginAt: number;
     passwordVerified: boolean;
     authVerified: boolean;
+    signupWith: Platform;
+    platform: Platform;
     tokenID: string;
     disabled: boolean;
     entityOf: string;
@@ -837,6 +838,7 @@ interface AuthData {
     aud: string;
     iss: string;
     sub: string;
+    acr?: any;
     toString(): string;
 }
 
@@ -884,12 +886,20 @@ interface MosquitoHttpOptions {
      * @default false
      */
     rawEntry?: boolean;
+
     /**
      * `true` to accept disabled token
      * 
      * @default false
      */
     allowDisabledAuth?: boolean;
+
+    /**
+     * `true` to allow unverified token (i.e tokens with authVerified=false)
+     * 
+     * @default false
+     */
+    allowUnverifiedAuth?: boolean;
 }
 
 interface DatabaseListenerOption extends ChangeStreamOptions {
@@ -949,7 +959,7 @@ export default class MosquitoTransportServer {
     get db(): Db;
     get admin_db(): Db;
 
-    getDatabase(dbName?: string, dbRef?: string): Db;
+    getDatabase(dbName?: string, instanceName?: string): Db;
 
     /**
      * purge all tokens references for a user and sign-out the user immediately
@@ -1061,50 +1071,6 @@ export default class MosquitoTransportServer {
     getUserData(uid: string): Promise<UserData>;
 }
 
-interface BackupInstallationResult {
-    database: {
-        [dbUrl: string]: {
-            [dbName: string]: number;
-        }
-    },
-    totalWrittenDocuments: number;
-    totalWrittenFiles: number;
-}
-
-interface BackupExtraction {
-    /**
-     * password use for encrypting the backup data
-     */
-    password?: string | undefined;
-    /**
-     * this callback should be handled when you to pass option to the internal `MongoClient` constructor used in extracting mongodb.
-     * 
-     * you can also return your own `MongoClient` to be use in extracting mongodb
-     * 
-     * @returns `MongoClient` or `MongoClientOptions`
-     */
-    onMongodbOption?: (dbUrl: string) => MongoClientOptions | MongoClient;
-}
-
-interface BackupInstallation {
-    password?: string | undefined;
-    /**
-     * this callback should be handled when you to pass option to the internal `MongoClient` constructor used in extracting mongodb.
-     * 
-     * you can also return your own `MongoClient` to be use in extracting mongodb
-     * 
-     * @returns `MongoClient` or `MongoClientOptions`
-     */
-    onMongodbOption?: (dbUrl: string) => BackupRemapMongoOption | MongoClient;
-}
-
-interface BackupRemapMongoOption extends MongoClientOptions {
-    /**
-     * when installing a backup, this can be used to remap database location
-     */
-    url?: string | undefined;
-}
-
 type longitude = number;
 type latitude = number;
 
@@ -1138,7 +1104,8 @@ interface auth_provider_id {
     APPLE: 'apple';
 }
 
-type auth_provider_id_values = auth_provider_id['GOOGLE'] |
+type auth_provider_id_values =
+    auth_provider_id['GOOGLE'] |
     auth_provider_id['FACEBOOK'] |
     auth_provider_id['PASSWORD'] |
     auth_provider_id['GITHUB'] |

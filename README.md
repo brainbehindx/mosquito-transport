@@ -134,7 +134,6 @@ your server is now ready to be deploy on node.js! 🚀. Now install any mosquito
   - [enforceE2E](#enforceE2E)
   - [e2eKeyPair](#e2eKeyPair)
   - [logger](#logger)
-  - [castBSON](#castBSON)
   - [ddosMap](#ddosMap)
   - [internals](#internals)
   - [dumpsterPath](#dumpsterPath)
@@ -521,11 +520,6 @@ can either be a string or array containing any of the following:
 - `served-content`: log serve content requests
 - `database-snapshot`: log database snapshot events
 - `error`: log all internal errors
-
-# castBSON
-
-true to deserialize BSON values emited at {@link MosquitoServerConfig.databaseRules} to their Node.js closest equivalent types
-default value is true
 
 # ddosMap
 
