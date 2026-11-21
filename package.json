@@ -1,6 +1,6 @@
 {
   "name": "mosquito-transport",
-  "version": "1.9.8",
+  "version": "1.9.9",
   "description": "Quickly spawn server infrastructure along robust authentication, database, storage, and cross-platform compatibility",
   "main": "lib/index.js",
   "type": "module",
@@ -45,7 +45,7 @@
     "limit-task": "1.0.0",
     "mime": "^4.1.2",
     "mingo": "^7.2.7",
-    "mongodb": "^7.6.0",
+    "mongodb": "^7.9.0",
     "node-fetch": "^3.3.2",
     "poke-object": "^1.0.1",
     "set-large-timeout": "^1.0.2",
