@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/brainbehindx/mosquito-transport#readme",
   "dependencies": {
+    "@turf/turf": "^7.4.0",
     "argon2": "^0.45.2",
     "buffer": "^6.0.3",
     "compression": "^1.8.2",
@@ -43,6 +44,7 @@
     "jwks-rsa": "^4.1.0",
     "limit-task": "1.0.0",
     "mime": "^4.1.2",
+    "mingo": "^7.2.7",
     "mongodb": "^7.6.0",
     "node-fetch": "^3.3.2",
     "poke-object": "^1.0.1",
